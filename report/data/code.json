@@ -1,0 +1,734 @@
+{
+  "modules": {
+    "common": [
+      {
+        "file": "gaussianKernel.m",
+        "signature": "K = gaussianKernel(k, sigma)",
+        "description": "Normalised 2-D Gaussian kernel of odd size k x k.",
+        "lines": 12,
+        "commentLines": 2
+      },
+      {
+        "file": "imageMetrics.m",
+        "signature": "[mse, psnr] = imageMetrics(A, B)",
+        "description": "Mean squared error and PSNR (dB) between two images in [0,1].",
+        "lines": 8,
+        "commentLines": 1
+      },
+      {
+        "file": "padImage.m",
+        "signature": "P = padImage(I, pr, pc, mode, val)",
+        "description": "Pad an image by pr rows and pc columns on every side.",
+        "lines": 33,
+        "commentLines": 5
+      },
+      {
+        "file": "showImage.m",
+        "signature": "h = showImage(ax, I, ttl)",
+        "description": "Display a gray/RGB/binary image in an axes without any toolbox.",
+        "lines": 23,
+        "commentLines": 3
+      },
+      {
+        "file": "spatialFilter.m",
+        "signature": "J = spatialFilter(I, K, padMode)",
+        "description": "Correlate an image with an odd-sized kernel (like imfilter).",
+        "lines": 21,
+        "commentLines": 6
+      },
+      {
+        "file": "toDouble.m",
+        "signature": "I = toDouble(I)",
+        "description": "Convert an image of any numeric class to double in the range [0,1].",
+        "lines": 17,
+        "commentLines": 5
+      },
+      {
+        "file": "toGray.m",
+        "signature": "G = toGray(I)",
+        "description": "Convert an RGB (or grayscale) image to a grayscale double image in [0,1].",
+        "lines": 12,
+        "commentLines": 2
+      }
+    ],
+    "module1_enhancement": [
+      {
+        "file": "addNoise.m",
+        "signature": "J = addNoise(I, type, amount)",
+        "description": "Add synthetic noise so the denoising filters can be evaluated.",
+        "lines": 26,
+        "commentLines": 5
+      },
+      {
+        "file": "compareEnhancement.m",
+        "signature": "fig = compareEnhancement(I, ref)",
+        "description": "Show the original image next to every Module 1 result.",
+        "lines": 31,
+        "commentLines": 4
+      },
+      {
+        "file": "freqFilter.m",
+        "signature": "[J, H, spectrum] = freqFilter(I, type, cutoff, shape, order)",
+        "description": "Fourier-domain filtering (Module 1 - frequency domain).",
+        "lines": 69,
+        "commentLines": 15
+      },
+      {
+        "file": "grayTransform.m",
+        "signature": "J = grayTransform(I, method, p1, p2)",
+        "description": "Point (gray-level) transformations for brightness/contrast.",
+        "lines": 46,
+        "commentLines": 14
+      },
+      {
+        "file": "histEqualize.m",
+        "signature": "J = histEqualize(I, nLevels)",
+        "description": "Histogram equalisation (Module 1 - histogram processing).",
+        "lines": 25,
+        "commentLines": 6
+      },
+      {
+        "file": "histMatch.m",
+        "signature": "J = histMatch(I, ref, nLevels)",
+        "description": "Histogram matching / specification (Module 1).",
+        "lines": 34,
+        "commentLines": 5
+      },
+      {
+        "file": "sharpenFilter.m",
+        "signature": "[J, detail] = sharpenFilter(I, type, amount)",
+        "description": "Image sharpening (Module 1 - spatial filtering).",
+        "lines": 29,
+        "commentLines": 7
+      },
+      {
+        "file": "smoothFilter.m",
+        "signature": "J = smoothFilter(I, type, k, sigma)",
+        "description": "Spatial smoothing filters for noise reduction (Module 1).",
+        "lines": 38,
+        "commentLines": 6
+      }
+    ],
+    "module2_segmentation": [
+      {
+        "file": "adaptiveThreshold.m",
+        "signature": "BW = adaptiveThreshold(I, win, C, polarity)",
+        "description": "Local-mean thresholding, robust against uneven lighting.",
+        "lines": 23,
+        "commentLines": 6
+      },
+      {
+        "file": "colorSegment.m",
+        "signature": "BW = colorSegment(I, space, spec)",
+        "description": "Colour-based segmentation in the RGB or HSV colour space.",
+        "lines": 46,
+        "commentLines": 9
+      },
+      {
+        "file": "compareEdgeDetectors.m",
+        "signature": "fig = compareEdgeDetectors(I)",
+        "description": "Side-by-side comparison of Sobel, Prewitt and Canny.",
+        "lines": 18,
+        "commentLines": 2
+      },
+      {
+        "file": "compareSegmentation.m",
+        "signature": "fig = compareSegmentation(I, seed)",
+        "description": "Compare thresholding, region growing, colour and edge+morphology segmentation.",
+        "lines": 35,
+        "commentLines": 3
+      },
+      {
+        "file": "componentProps.m",
+        "signature": "props = componentProps(L, n)",
+        "description": "Area, bounding box and centroid of every labelled component.",
+        "lines": 26,
+        "commentLines": 7
+      },
+      {
+        "file": "edgeDetect.m",
+        "signature": "[E, mag, ang] = edgeDetect(I, method, thresh, sigma)",
+        "description": "Sobel, Prewitt and Canny edge detectors (Module 2).",
+        "lines": 83,
+        "commentLines": 15
+      },
+      {
+        "file": "fillHoles.m",
+        "signature": "BW = fillHoles(BW)",
+        "description": "Fill background regions that are completely surrounded by foreground.",
+        "lines": 16,
+        "commentLines": 2
+      },
+      {
+        "file": "filterComponents.m",
+        "signature": "[BW, keep, props, L] = filterComponents(BW, varargin)",
+        "description": "Shape-based segmentation: keep only components matching size/shape rules.",
+        "lines": 35,
+        "commentLines": 9
+      },
+      {
+        "file": "labelComponents.m",
+        "signature": "[L, n] = labelComponents(BW, conn)",
+        "description": "Connected-component labelling of a binary image (like bwlabel).",
+        "lines": 61,
+        "commentLines": 11
+      },
+      {
+        "file": "makeSE.m",
+        "signature": "SE = makeSE(type, sz, angle)",
+        "description": "Create a flat structuring element (logical matrix).",
+        "lines": 40,
+        "commentLines": 7
+      },
+      {
+        "file": "morphOp.m",
+        "signature": "J = morphOp(I, op, SE)",
+        "description": "Flat morphological operations for binary and gray-scale images.",
+        "lines": 61,
+        "commentLines": 11
+      },
+      {
+        "file": "otsuThreshold.m",
+        "signature": "[level, BW, eta] = otsuThreshold(I)",
+        "description": "Otsu's global threshold (maximises between-class variance).",
+        "lines": 29,
+        "commentLines": 10
+      },
+      {
+        "file": "regionGrow.m",
+        "signature": "[BW, nIter] = regionGrow(I, seed, tol, conn)",
+        "description": "Region-growing segmentation from one or more seed points.",
+        "lines": 42,
+        "commentLines": 9
+      }
+    ],
+    "module3_geometry": [
+      {
+        "file": "compareGeometry.m",
+        "signature": "fig = compareGeometry(I)",
+        "description": "Show Module 3 results: transforms, interpolation methods and distortion.",
+        "lines": 33,
+        "commentLines": 3
+      },
+      {
+        "file": "geometricTransforms.m",
+        "signature": "varargout = geometricTransforms(I, op, varargin)",
+        "description": "Translation, scaling, rotation, shear and general affine warps.",
+        "lines": 60,
+        "commentLines": 12
+      },
+      {
+        "file": "harrisCorners.m",
+        "signature": "pts = harrisCorners(I, maxPts, sigma)",
+        "description": "Harris corner detector. Returns up to maxPts corners as [x y score].",
+        "lines": 33,
+        "commentLines": 7
+      },
+      {
+        "file": "imResize.m",
+        "signature": "J = imResize(I, sz, method, antialias)",
+        "description": "Resize an image with nearest / bilinear / bicubic interpolation.",
+        "lines": 33,
+        "commentLines": 8
+      },
+      {
+        "file": "interpSample.m",
+        "signature": "J = interpSample(I, X, Y, method, fillVal)",
+        "description": "Sample an image at non-integer coordinates (Module 3 - interpolation).",
+        "lines": 69,
+        "commentLines": 12
+      },
+      {
+        "file": "radialDistortion.m",
+        "signature": "J = radialDistortion(I, k1, k2, mode, method)",
+        "description": "Apply or correct radial (barrel / pincushion) lens distortion.",
+        "lines": 56,
+        "commentLines": 15
+      },
+      {
+        "file": "registerImages.m",
+        "signature": "[T, registered, info] = registerImages(fixed, moving, method)",
+        "description": "Align a moving image to a fixed image (Module 3 - optional, advanced).",
+        "lines": 92,
+        "commentLines": 13
+      },
+      {
+        "file": "warpImage.m",
+        "signature": "J = warpImage(I, T, outSize, method, mapping, fillVal)",
+        "description": "Geometric warp by a 3x3 homogeneous transform (forward or reverse mapping).",
+        "lines": 69,
+        "commentLines": 12
+      }
+    ],
+    "svm": [
+      {
+        "file": "hogFeatures.m",
+        "signature": "f = hogFeatures(I, cellSize, nBins)",
+        "description": "Histogram of Oriented Gradients descriptor (Dalal & Triggs).",
+        "lines": 48,
+        "commentLines": 9
+      },
+      {
+        "file": "kernelMatrix.m",
+        "signature": "K = kernelMatrix(A, B, kp)",
+        "description": "Kernel (Gram) matrix between the rows of A and the rows of B.",
+        "lines": 26,
+        "commentLines": 9
+      },
+      {
+        "file": "svmPredict.m",
+        "signature": "[pred, conf, votes, score] = svmPredict(model, X)",
+        "description": "Classify rows of X with a model from SVMTRAIN (one-vs-one voting).",
+        "lines": 31,
+        "commentLines": 7
+      },
+      {
+        "file": "svmTrain.m",
+        "signature": "model = svmTrain(X, labels, varargin)",
+        "description": "Multi-class SVM (one-vs-one) built from binary SMO classifiers.",
+        "lines": 71,
+        "commentLines": 12
+      },
+      {
+        "file": "svmTrainBinary.m",
+        "signature": "m = svmTrainBinary(X, y, C, kp, tol, maxIter)",
+        "description": "Soft-margin binary SVM trained with Sequential Minimal Optimisation.",
+        "lines": 81,
+        "commentLines": 20
+      }
+    ],
+    "lpr": [
+      {
+        "file": "augmentGlyph.m",
+        "signature": "N = augmentGlyph(g)",
+        "description": "Turn a clean font glyph into a realistic, normalised training sample.",
+        "lines": 44,
+        "commentLines": 11
+      },
+      {
+        "file": "buildGlyphTemplates.m",
+        "signature": "tpl = buildGlyphTemplates(cacheFile)",
+        "description": "Render the characters 0-9 and A-Z in many fonts (training material).",
+        "lines": 90,
+        "commentLines": 14
+      },
+      {
+        "file": "detectPlate.m",
+        "signature": "[bbox, plateImg, dbg] = detectPlate(img, varargin)",
+        "description": "Locate the license plate in a photo using Modules 1-3 (no learning).",
+        "lines": 97,
+        "commentLines": 26
+      },
+      {
+        "file": "evaluateLPR.m",
+        "signature": "R = evaluateLPR(model, varargin)",
+        "description": "Measure the recognition pipeline on freshly generated synthetic scenes.",
+        "lines": 116,
+        "commentLines": 16
+      },
+      {
+        "file": "generateCharDataset.m",
+        "signature": "[X, y, imgs] = generateCharDataset(tpl, variantIdx, nPerClass, seed)",
+        "description": "Synthetic character dataset (HOG features + labels).",
+        "lines": 32,
+        "commentLines": 8
+      },
+      {
+        "file": "makeScene.m",
+        "signature": "[img, gt] = makeScene(tpl, variantIdx, varargin)",
+        "description": "Synthetic street photo of a car with a license plate (test data generator).",
+        "lines": 119,
+        "commentLines": 16
+      },
+      {
+        "file": "normalizeChar.m",
+        "signature": "N = normalizeChar(ink, outSize, fill)",
+        "description": "Crop a binary character to its bounding box and fit it into a square canvas.",
+        "lines": 26,
+        "commentLines": 7
+      },
+      {
+        "file": "randomPlateText.m",
+        "signature": "[txt, fmt] = randomPlateText(fmt)",
+        "description": "Random plate number following a letter/digit format.",
+        "lines": 20,
+        "commentLines": 3
+      },
+      {
+        "file": "recognizePlate.m",
+        "signature": "res = recognizePlate(img, model, varargin)",
+        "description": "Full pipeline: photo -> plate location -> characters -> SVM -> text.",
+        "lines": 63,
+        "commentLines": 13
+      },
+      {
+        "file": "renderPlate.m",
+        "signature": "[plate, info] = renderPlate(txt, tpl, v, varargin)",
+        "description": "Draw a license plate image for a given text using font glyph templates.",
+        "lines": 83,
+        "commentLines": 10
+      },
+      {
+        "file": "segmentChars.m",
+        "signature": "[chars, boxes, dbg] = segmentChars(plateImg, varargin)",
+        "description": "Cut a plate image into normalised character images.",
+        "lines": 131,
+        "commentLines": 24
+      },
+      {
+        "file": "showPipeline.m",
+        "signature": "fig = showPipeline(img, res, visible)",
+        "description": "Figure with every stage of the plate recognition pipeline.",
+        "lines": 56,
+        "commentLines": 6
+      },
+      {
+        "file": "trainLPRModel.m",
+        "signature": "model = trainLPRModel(varargin)",
+        "description": "Train the character-recognition SVM and save it.",
+        "lines": 66,
+        "commentLines": 12
+      }
+    ],
+    "app": [
+      {
+        "file": "toolboxOperations.m",
+        "signature": "ops = toolboxOperations()",
+        "description": "Table of every operation offered by the GUI (and used by the tests).",
+        "lines": 177,
+        "commentLines": 18
+      },
+      {
+        "file": "LPR_Toolbox.m",
+        "signature": "app = LPR_Toolbox(varargin)",
+        "description": "Image-processing toolbox GUI with SVM license plate recognition.",
+        "lines": 359,
+        "commentLines": 25
+      },
+      {
+        "file": "train_lpr_model.m",
+        "signature": "train_lpr_model (script)",
+        "description": "Build the character SVM used by the license plate recognizer.",
+        "lines": 25,
+        "commentLines": 10
+      },
+      {
+        "file": "demo_lpr.m",
+        "signature": "res = demo_lpr(imageFile, format)",
+        "description": "Recognise the license plate in an image and show every pipeline stage.",
+        "lines": 48,
+        "commentLines": 6
+      },
+      {
+        "file": "demo_modules.m",
+        "signature": "demo_modules(imageFile)",
+        "description": "Run all three toolbox modules on one image and save comparison figures.",
+        "lines": 35,
+        "commentLines": 5
+      },
+      {
+        "file": "run_tests.m",
+        "signature": "run_tests()",
+        "description": "Self-checks for every module of the toolbox.",
+        "lines": 168,
+        "commentLines": 16
+      },
+      {
+        "file": "setup_toolbox.m",
+        "signature": "setup_toolbox()",
+        "description": "Add every toolbox folder to the MATLAB path (run once per session).",
+        "lines": 10,
+        "commentLines": 2
+      }
+    ]
+  },
+  "totalLines": 3406,
+  "totalCommentLines": 574,
+  "totalFiles": 61,
+  "testNames": [
+    "toDouble: uint8 -> [0,1]",
+    "toDouble: double with small overshoot is left alone",
+    "padImage replicate",
+    "histEqualize increases contrast",
+    "histMatch moves mean towards reference",
+    "grayTransform negative",
+    "median beats mean on salt-and-pepper noise",
+    "Gaussian filter preserves constant image",
+    "Laplacian sharpening increases edge energy",
+    "FFT low-pass smooths, high-pass sharpens",
+    "FFT filters work on RGB",
+    "labelComponents matches flood-fill reference",
+    "Sobel/Prewitt/Canny find the step edge",
+    "Otsu separates a bimodal histogram",
+    "dilation equals convolution",
+    "erosion is the dual of dilation",
+    "opening is anti-extensive, closing extensive",
+    "fillHoles fills an enclosed hole",
+    "region growing fills exactly the flat square",
+    "colour segmentation finds pure yellow",
+    "rotate 90 deg equals rot90",
+    "translation moves pixels",
+    "forward bilinear mapping with identity keeps the image",
+    "forward mapping leaves holes, reverse mapping does not",
+    "bilinear interpolates a ramp exactly",
+    "bicubic interpolates a ramp exactly",
+    "imResize round trip keeps the image",
+    "radial distortion round trip",
+    "strong barrel distortion: finite result, centre recovered, unreachable corners left black",
+    "feature registration reduces the error",
+    "phase correlation recovers the shift",
+    "binary RBF-SVM separates concentric circles",
+    "SMO keeps sum(alpha*y) = 0",
+    "HOG descriptor length is 324",
+    "makeScene returns a plate box inside the image",
+    "detectPlate finds the plate (IoU > 0.5)",
+    "pipeline: plate detection >= 90 % on unseen fonts",
+    "pipeline: character accuracy (format known) >= 90 %",
+    "pipeline: exact plates (format known) >= 70 %"
+  ],
+  "nTests": 39,
+  "ops": [
+    {
+      "module": 1,
+      "name": "Histogram equalisation",
+      "params": ""
+    },
+    {
+      "module": 1,
+      "name": "Histogram matching (to reference)",
+      "params": ""
+    },
+    {
+      "module": 1,
+      "name": "Brightness / contrast",
+      "params": "Contrast gain; Brightness"
+    },
+    {
+      "module": 1,
+      "name": "Gamma correction",
+      "params": "Gamma"
+    },
+    {
+      "module": 1,
+      "name": "Log transform",
+      "params": "a"
+    },
+    {
+      "module": 1,
+      "name": "Contrast stretching",
+      "params": "Low percentile; High percentile"
+    },
+    {
+      "module": 1,
+      "name": "Mean filter",
+      "params": "Window size"
+    },
+    {
+      "module": 1,
+      "name": "Gaussian filter",
+      "params": "Window size; Sigma"
+    },
+    {
+      "module": 1,
+      "name": "Median filter",
+      "params": "Window size"
+    },
+    {
+      "module": 1,
+      "name": "Laplacian sharpening",
+      "params": "Amount"
+    },
+    {
+      "module": 1,
+      "name": "High-pass sharpening",
+      "params": "Amount"
+    },
+    {
+      "module": 1,
+      "name": "Unsharp masking",
+      "params": "Amount"
+    },
+    {
+      "module": 1,
+      "name": "Frequency low-pass (Butterworth)",
+      "params": "Cut-off"
+    },
+    {
+      "module": 1,
+      "name": "Frequency high-pass (Butterworth)",
+      "params": "Cut-off"
+    },
+    {
+      "module": 1,
+      "name": "Frequency band-pass (Gaussian)",
+      "params": "Low cut-off; High cut-off"
+    },
+    {
+      "module": 1,
+      "name": "Add Gaussian noise",
+      "params": "Sigma"
+    },
+    {
+      "module": 1,
+      "name": "Add salt-and-pepper noise",
+      "params": "Density"
+    },
+    {
+      "module": 2,
+      "name": "Sobel edges",
+      "params": "Threshold (0 = Otsu)"
+    },
+    {
+      "module": 2,
+      "name": "Prewitt edges",
+      "params": "Threshold (0 = Otsu)"
+    },
+    {
+      "module": 2,
+      "name": "Canny edges",
+      "params": "High threshold (0 = auto); Sigma"
+    },
+    {
+      "module": 2,
+      "name": "Otsu threshold",
+      "params": ""
+    },
+    {
+      "module": 2,
+      "name": "Adaptive threshold",
+      "params": "Window; Offset"
+    },
+    {
+      "module": 2,
+      "name": "Region growing (from centre)",
+      "params": "Tolerance"
+    },
+    {
+      "module": 2,
+      "name": "Colour segmentation: white (HSV)",
+      "params": ""
+    },
+    {
+      "module": 2,
+      "name": "Colour segmentation: yellow (HSV)",
+      "params": ""
+    },
+    {
+      "module": 2,
+      "name": "Colour segmentation: blue (HSV)",
+      "params": ""
+    },
+    {
+      "module": 2,
+      "name": "Colour segmentation: red (RGB range)",
+      "params": ""
+    },
+    {
+      "module": 2,
+      "name": "Morphology: dilation",
+      "params": "Disk radius"
+    },
+    {
+      "module": 2,
+      "name": "Morphology: erosion",
+      "params": "Disk radius"
+    },
+    {
+      "module": 2,
+      "name": "Morphology: opening",
+      "params": "Disk radius"
+    },
+    {
+      "module": 2,
+      "name": "Morphology: closing",
+      "params": "Disk radius"
+    },
+    {
+      "module": 2,
+      "name": "Morphology: gradient (outline)",
+      "params": "Disk radius"
+    },
+    {
+      "module": 2,
+      "name": "Shape segmentation (plate-like blobs)",
+      "params": ""
+    },
+    {
+      "module": 3,
+      "name": "Translation",
+      "params": "dx (px); dy (px)"
+    },
+    {
+      "module": 3,
+      "name": "Scaling / zoom",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Rotation",
+      "params": "Angle (deg)"
+    },
+    {
+      "module": 3,
+      "name": "Rotation (full canvas)",
+      "params": "Angle (deg)"
+    },
+    {
+      "module": 3,
+      "name": "Shear",
+      "params": "Shear x; Shear y"
+    },
+    {
+      "module": 3,
+      "name": "Affine (rotate + scale + shear)",
+      "params": "Angle (deg); Scale; Shear"
+    },
+    {
+      "module": 3,
+      "name": "Forward mapping (scale, shows holes)",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Reverse mapping (scale)",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Resize: nearest neighbour",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Resize: bilinear",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Resize: bicubic",
+      "params": "Scale"
+    },
+    {
+      "module": 3,
+      "name": "Radial distortion: simulate",
+      "params": "k1; k2"
+    },
+    {
+      "module": 3,
+      "name": "Radial distortion: correct",
+      "params": "k1; k2"
+    },
+    {
+      "module": 3,
+      "name": "Image registration (features)",
+      "params": ""
+    },
+    {
+      "module": 3,
+      "name": "Image registration (phase corr.)",
+      "params": ""
+    }
+  ],
+  "generated": "2026-10-24 18:52",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

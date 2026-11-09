@@ -1,0 +1,82 @@
+{
+  "timing": {
+    "cannyMs": 68.56175465,
+    "labelMs": 8.03825465,
+    "edgePixels": 7231
+  },
+  "edge": {
+    "sigmas": [
+      0.02,
+      0.08
+    ],
+    "sobel": [
+      {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      {
+        "precision": 0.82978723404255317,
+        "recall": 1,
+        "f1": 0.90697674418604646
+      }
+    ],
+    "prewitt": [
+      {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      {
+        "precision": 0.90455148033583743,
+        "recall": 1,
+        "f1": 0.94988399071925755
+      }
+    ],
+    "canny": [
+      {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      }
+    ]
+  },
+  "seg": {
+    "otsuDice": 0.83664602015346212,
+    "adaptiveDice": 0.99432463110102154,
+    "regionDice": 0.99020807833537328,
+    "otsuLevel": 0.3203125
+  },
+  "morph": {
+    "components": {
+      "clean": 9,
+      "noisy": 128,
+      "opened": 37,
+      "openedClosed": 20
+    }
+  },
+  "region": {
+    "fraction": [
+      0.017809244791666668,
+      0.020110677083333334,
+      0.022757161458333335
+    ],
+    "iterations": [
+      217,
+      215,
+      216
+    ],
+    "tolerances": [
+      0.03,
+      0.08,
+      0.2
+    ]
+  },
+  "generated": "2026-10-24 18:41",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

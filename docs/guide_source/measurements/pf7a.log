@@ -1,0 +1,11 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 13, exact 7 (43.8 %), character accuracy 66.4 %, 20.08 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 66.4 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F7 | Frequency low-pass cut-off 0.5       | exact  7/16 | read 13/16 | chars  66.4 % | 20.1 s/photo
+test photos (16): text produced 13, exact 9 (56.2 %), character accuracy 71.1 %, 22.65 s/photo
+  day   (16 photos, photos transformed): exact 9 (56.2 %), character accuracy 71.1 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F7 | Frequency band-pass 0.01 .. 0.8      | exact  9/16 | read 13/16 | chars  71.1 % | 22.6 s/photo
+PF7 DONE

@@ -1,0 +1,75 @@
+{
+  "detect": {
+    "n": 60,
+    "closeWidth": [
+      0.04,
+      0.055,
+      0.07,
+      0.09,
+      0.12
+    ],
+    "iou50": [
+      44,
+      59,
+      59,
+      58,
+      54
+    ],
+    "covered95": [
+      42,
+      58,
+      60,
+      60,
+      60
+    ],
+    "none": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "meanIoU": [
+      0.684942626563989,
+      0.77922943869224326,
+      0.78207626007097419,
+      0.76105745477837516,
+      0.7233445452178231
+    ]
+  },
+  "seg": [
+    {
+      "name": "Otsu only, height range 0.75-1.33",
+      "countOk": 0.94666666666666666,
+      "exactNoFormat": 0.79333333333333333,
+      "exactFormat": 0.87333333333333329
+    },
+    {
+      "name": "Otsu only, height range 0.65-1.6",
+      "countOk": 0.94666666666666666,
+      "exactNoFormat": 0.79333333333333333,
+      "exactFormat": 0.87333333333333329
+    },
+    {
+      "name": "Otsu + adaptive, height range 0.75-1.33",
+      "countOk": 0.92666666666666664,
+      "exactNoFormat": 0.72666666666666668,
+      "exactFormat": 0.83333333333333337
+    },
+    {
+      "name": "Otsu + adaptive, height range 0.65-1.6",
+      "countOk": 0.91333333333333333,
+      "exactNoFormat": 0.71333333333333337,
+      "exactFormat": 0.82
+    },
+    {
+      "name": "Adaptive only, height range 0.75-1.33",
+      "countOk": 0.92,
+      "exactNoFormat": 0.72,
+      "exactFormat": 0.84
+    }
+  ],
+  "segN": 150,
+  "generated": "2026-10-24 18:49",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

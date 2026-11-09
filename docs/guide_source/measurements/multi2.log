@@ -1,0 +1,50 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+MULTI | own_night1       | none       | 2 plate(s) | 46 s
+   1) T935AK797    box [346 496 176 44] (orig px width 176) score 0.53 reliable
+   2) 6688EP       box [1342 483 90 30] (orig px width 90) score -0.38 reliable
+MULTI | own_night1       | small x2   | 2 plate(s) | 76 s
+   1) 6688F        box [1311 478 161 40] (orig px width 161) score 0.51 reliable
+   2) T935AK797    box [353 502 161 40] (orig px width 161) score 0.48 reliable
+MULTI | own_night1       | small x3   | 2 plate(s) | 127 s
+   1) T935AK797    box [353 501 160 40] (orig px width 160) score 0.49 reliable
+   2) 6688EP2      box [1303 481 160 40] (orig px width 160) score 0.08 reliable
+MULTI | own_night1       | gamma 0.6  | 2 plate(s) | 17 s
+   1) T935AK797    box [354 502 160 40] (orig px width 160) score 0.38 reliable
+   2) 6688H        box [1287 483 164 36] (orig px width 164) score -0.58 reliable
+MULTI | own_night1       | CLAHE      | 2 plate(s) | 42 s
+   1) T935AK797    box [354 502 160 40] (orig px width 160) score 0.37 reliable
+   2) 6688EP2      box [1312 478 160 40] (orig px width 160) score 0.33 reliable
+MULTI | own_dark         | none       | 0 plate(s) | 220 s
+MULTI | own_dark         | small x2   | 0 plate(s) | 62 s
+MULTI | own_dark         | small x3   | 0 plate(s) | 80 s
+MULTI | own_dark         | gamma 0.6  | 0 plate(s) | 363 s
+MULTI | own_dark         | CLAHE      | 0 plate(s) | 42 s
+MULTI | own_traffic_day  | none       | 0 plate(s) | 16 s
+MULTI | own_traffic_day  | small x2   | 0 plate(s) | 120 s
+MULTI | own_traffic_day  | small x3   | 0 plate(s) | 108 s
+MULTI | own_traffic_day  | gamma 0.6  | 0 plate(s) | 92 s
+MULTI | own_traffic_day  | CLAHE      | 0 plate(s) | 150 s
+MULTI | own_toomany      | none       | 0 plate(s) | 27 s
+MULTI | own_toomany      | small x2   | 0 plate(s) | 45 s
+MULTI | own_toomany      | small x3   | 0 plate(s) | 56 s
+MULTI | own_toomany      | gamma 0.6  | 0 plate(s) | 77 s
+MULTI | own_toomany      | CLAHE      | 0 plate(s) | 196 s
+MULTI | own_night0       | none       | 0 plate(s) | 53 s
+MULTI | own_night0       | small x2   | 0 plate(s) | 107 s
+MULTI | own_night0       | small x3   | 0 plate(s) | 141 s
+MULTI | own_night0       | gamma 0.6  | 0 plate(s) | 80 s
+MULTI | own_night0       | CLAHE      | 0 plate(s) | 46 s
+MULTI | own_faraway      | none       | 0 plate(s) | 117 s
+MULTI | own_faraway      | small x2   | 1 plate(s) | 41 s
+   1) 8COU         box [54 319 54 19] (orig px width 54) score -1.17 reliable
+MULTI | own_faraway      | small x3   | 0 plate(s) | 214 s
+MULTI | own_faraway      | gamma 0.6  | 0 plate(s) | 98 s
+MULTI | own_faraway      | CLAHE      | 1 plate(s) | 24 s
+   1) FOUL         box [54 319 54 20] (orig px width 54) score -0.99 small
+MULTI | own_hidden       | none       | 0 plate(s) | 70 s
+MULTI | own_hidden       | small x2   | 0 plate(s) | 79 s
+MULTI | own_hidden       | small x3   | 0 plate(s) | 112 s
+MULTI | own_hidden       | gamma 0.6  | 0 plate(s) | 288 s
+MULTI | own_hidden       | CLAHE      | 0 plate(s) | 97 s
+MULTI1 DONE

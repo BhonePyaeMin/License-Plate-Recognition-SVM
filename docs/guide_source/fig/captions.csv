@@ -1,0 +1,52 @@
+file,reading,truth,group,label
+night_lit_1.png,LJ6J,LJ67CTU,night_lit,none
+night_lit_2.png,LJ6J,LJ67CTU,night_lit,bilateral
+night_lit_3.png,LJ6J,LJ67CTU,night_lit,CLAHE
+night_lit_4.png,LJGJ,LJ67CTU,night_lit,gamma 0.6
+night_dark_1.png,no plate (no region with enough characters),LJ67CTU,night_dark,none
+night_dark_2.png,no plate (no region with enough characters),LJ67CTU,night_dark,bilateral
+night_dark_3.png,LJG1,LJ67CTU,night_dark,CLAHE
+night_dark_4.png,no plate (no region with enough characters),LJ67CTU,night_dark,gamma 0.6
+small_1.png,LJ67CTU,LJ67CTU,small,none
+small_2.png,LJ67CTU,LJ67CTU,small,enlarge x2
+small_3.png,LJ67CTU,LJ67CTU,small,enlarge x2 + unsharp
+dots_1.png,LJ67CTU,LJ67CTU,dots,none
+dots_2.png,LJ67CTU,LJ67CTU,dots,median 3x3
+grain_1.png,LJ67CTU,LJ67CTU,grain,none
+grain_2.png,LJ67CTU,LJ67CTU,grain,bilateral
+grain_3.png,LJ67CTU,LJ67CTU,grain,Gaussian 5x5
+grain_4.png,LJ67CTU,LJ67CTU,grain,median 3x3
+blur_1.png,LJ67CTU,LJ67CTU,blur,none
+blur_2.png,LJ67CTU,LJ67CTU,blur,unsharp
+blur_3.png,LJ67CTU,LJ67CTU,blur,Richardson-Lucy
+flat_1.png,LJ67CTU,LJ67CTU,flat,none
+flat_2.png,LJ67CTU,LJ67CTU,flat,stretching
+shade_1.png,LJ67CTU,LJ67CTU,shade,none
+shade_2.png,LJ67CTU,LJ67CTU,shade,illumination corr.
+persp_car_18_front_1.png,LJ67CTU,LJ67CTU,persp_car_18_front,none
+persp_car_18_front_2.png,LJ67CTU,LJ67CTU,persp_car_18_front,CLAHE
+persp_car_18_front_3.png,LJ67CTU,LJ67CTU,persp_car_18_front,enlarge x1.5 + unsharp
+persp_car_18_yaw30_1.png,LJ67CIU,LJ67CTU,persp_car_18_yaw30,none
+persp_car_18_yaw30_2.png,LJ67CTU,LJ67CTU,persp_car_18_yaw30,CLAHE
+persp_car_18_yaw30_3.png,LJ67CTU,LJ67CTU,persp_car_18_yaw30,enlarge x1.5 + unsharp
+persp_car_18_yaw50_1.png,LJ67CTU,LJ67CTU,persp_car_18_yaw50,none
+persp_car_18_yaw50_2.png,J67C,LJ67CTU,persp_car_18_yaw50,CLAHE
+persp_car_18_yaw50_3.png,LJ67CTU,LJ67CTU,persp_car_18_yaw50,enlarge x1.5 + unsharp
+persp_car_18_pitch30_1.png,LJ67CT,LJ67CTU,persp_car_18_pitch30,none
+persp_car_18_pitch30_2.png,LJ67CTU,LJ67CTU,persp_car_18_pitch30,CLAHE
+persp_car_18_pitch30_3.png,LJ67CT,LJ67CTU,persp_car_18_pitch30,enlarge x1.5 + unsharp
+persp_car_30_front_1.png,HZF448,HZF440,persp_car_30_front,none
+persp_car_30_front_2.png,HZF440,HZF440,persp_car_30_front,CLAHE
+persp_car_30_front_3.png,HZF440,HZF440,persp_car_30_front,enlarge x1.5 + unsharp
+persp_car_30_yaw30_1.png,no plate (plate score too low),HZF440,persp_car_30_yaw30,none
+persp_car_30_yaw30_2.png,HZF448,HZF440,persp_car_30_yaw30,CLAHE
+persp_car_30_yaw30_3.png,HZF448,HZF440,persp_car_30_yaw30,enlarge x1.5 + unsharp
+persp_car_30_yaw50_1.png,no plate (no region with enough characters),HZF440,persp_car_30_yaw50,none
+persp_car_30_yaw50_2.png,no plate (no region with enough characters),HZF440,persp_car_30_yaw50,CLAHE
+persp_car_30_yaw50_3.png,no plate (plate score too low),HZF440,persp_car_30_yaw50,enlarge x1.5 + unsharp
+persp_car_30_pitch30_1.png,HZF448,HZF440,persp_car_30_pitch30,none
+persp_car_30_pitch30_2.png,HZF440,HZF440,persp_car_30_pitch30,CLAHE
+persp_car_30_pitch30_3.png,HZF440,HZF440,persp_car_30_pitch30,enlarge x1.5 + unsharp
+own_dark_1.png,no plate (no region with enough characters),MH14TCF735,own_dark,none
+own_dark_2.png,4TC5,MH14TCF735,own_dark,enlarge x2 + unsharp
+own_dark_3.png,no plate (no region with enough characters),MH14TCF735,own_dark,CLAHE

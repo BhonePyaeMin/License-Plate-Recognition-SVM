@@ -1,0 +1,89 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 14, exact 7 (43.8 %), character accuracy 67.3 %, 68.37 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 67.3 %, text produced 14
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Resize (change the resolution)           | exact  7/16 | read 14/16 | chars  67.3 % | 68.4 s/photo
+test photos (16): text produced 12, exact 4 (25.0 %), character accuracy 60.2 %, 88.11 s/photo
+  day   (16 photos, photos transformed): exact 4 (25.0 %), character accuracy 60.2 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Mean (box) filter                        | exact  4/16 | read 12/16 | chars  60.2 % | 88.1 s/photo
+
+------------------------------------------------------------------------
+          Access violation detected at Mon Oct 26 16:02:50 2026
+------------------------------------------------------------------------
+Architecture     : win64
+Processor ID     : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+Host Name        : LAPTOP-29UDKLV8
+Locale           : en_US
+
+
+Abnormal termination:
+Access violation
+
+Current Thread: '' id 29576
+
+Register State (from fault):
+  RAX = 0000013f49b83060  RBX = 0000000000000000
+  RCX = 0000000000000000  RDX = 0000013f49b312d0
+  RSP = 00000015ebffeba0  RBP = 0000013f497df270
+  RSI = 00000100000001b3  RDI = 0000013f49b82e80
+ 
+   R8 = 7ffffffffffffffc   R9 = 0000000000000000
+  R10 = 0000013f44610000  R11 = 000000000000000d
+  R12 = 00000000ffffffff  R13 = cbf29ce484222325
+  R14 = 0000013f497df2a8  R15 = 0000013f4929b070
+ 
+  RIP = 00007ffadaeef6a8  EFL = 00010283
+ 
+   CS = 0033   FS = 0053   GS = 002b
+
+Stack Trace (from fault):
+[  0] 0x00007ffadaeef6a8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00325288 cppmicroservices::ServiceReferenceFromService+00001560
+[  1] 0x00007ffadaee7dc8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00294344 cppmicroservices::ServiceObjects<void>::GetServiceReference+00001896
+[  2] 0x00007ffadaee64b3 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00287923 cppmicroservices::ServiceObjectsBase::ServiceObjectsBase+00000307
+[  3] 0x00007ffadaee78d7 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00293079 cppmicroservices::ServiceObjects<void>::GetServiceReference+00000631
+[  4] 0x00007ffad4446b94 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00813972
+[  5] 0x00007ffad4499343 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01151811
+[  6] 0x00007ffad4499521 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01152289
+[  7] 0x00007ffad4453515 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00865557
+[  8] 0x00007ffad445a267 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00893543
+[  9] 0x00007ffad444084d C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00788557
+[ 10] 0x00007ffad444d7f5 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00841717
+[ 11] 0x00007ffad445778b C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00882571
+[ 12] 0x00007ffad43c3241 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00275009
+[ 13] 0x00007ffb5593cd30                   C:\WINDOWS\System32\ucrtbase.dll+00183600 wcsrchr+00000336
+[ 14] 0x00007ffb5662dda7                   C:\WINDOWS\System32\KERNEL32.DLL+00187815 BaseThreadInitThunk+00000023
+[ 15] 0x00007ffb585dee4c                      C:\WINDOWS\SYSTEM32\ntdll.dll+00519756 RtlUserThreadStart+00000044
+
+
+** This crash report has been written to C:\Users\66877\AppData\Local\MathWorks\ServiceHost\logs\MathWorksServiceHost_crash_25664.log **
+test photos (16): text produced 13, exact 7 (43.8 %), character accuracy 69.9 %, 89.90 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 69.9 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Median filter                            | exact  7/16 | read 13/16 | chars  69.9 % | 89.9 s/photo
+test photos (16): text produced 13, exact 7 (43.8 %), character accuracy 67.3 %, 50.99 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 67.3 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Unsharp masking                          | exact  7/16 | read 13/16 | chars  67.3 % | 51.0 s/photo
+test photos (16): text produced 12, exact 10 (62.5 %), character accuracy 72.5 %, 21.92 s/photo
+  day   (16 photos, photos transformed): exact 10 (62.5 %), character accuracy 72.5 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Deblur (Richardson-Lucy)                 | exact 10/16 | read 12/16 | chars  72.5 % | 21.9 s/photo
+test photos (16): text produced 13, exact 9 (56.2 %), character accuracy 70.1 %, 82.66 s/photo
+  day   (16 photos, photos transformed): exact 9 (56.2 %), character accuracy 70.1 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Brightness / contrast                    | exact  9/16 | read 13/16 | chars  70.1 % | 82.7 s/photo
+test photos (16): text produced 13, exact 8 (50.0 %), character accuracy 69.6 %, 19.52 s/photo
+  day   (16 photos, photos transformed): exact 8 (50.0 %), character accuracy 69.6 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Histogram equalisation                   | exact  8/16 | read 13/16 | chars  69.6 % | 19.5 s/photo
+test photos (16): text produced 13, exact 8 (50.0 %), character accuracy 69.0 %, 14.16 s/photo
+  day   (16 photos, photos transformed): exact 8 (50.0 %), character accuracy 69.0 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Illumination correction                  | exact  8/16 | read 13/16 | chars  69.0 % | 14.2 s/photo
+test photos (16): text produced 11, exact 3 (18.8 %), character accuracy 48.8 %, 14.10 s/photo
+  day   (16 photos, photos transformed): exact 3 (18.8 %), character accuracy 48.8 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Frequency band-pass                      | exact  3/16 | read 11/16 | chars  48.8 % | 14.1 s/photo
+PF6 DONE

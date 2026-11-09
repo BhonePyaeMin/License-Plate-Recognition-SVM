@@ -1,0 +1,40 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+saved results/module1_enhancement.png
+saved results/module2_edges.png
+saved results/module2_segmentation.png
+saved results/module3_geometry.png
+
+Evaluation on 100 synthetic scenes (test fonts, difficulty 0.20)
+  plate detection (IoU > 0.5)      :  98.0 %
+  correct number of characters     :  96.0 %
+  character accuracy, no format    :  96.5 %
+  character accuracy, with format  :  97.7 %
+  exact plate match, no format     :  79.0 %
+  exact plate match, with format   :  87.0 %
+  time per image                   :  0.31 s
+
+Evaluation on 100 synthetic scenes (test fonts, difficulty 0.50)
+  plate detection (IoU > 0.5)      :  99.0 %
+  correct number of characters     :  93.0 %
+  character accuracy, no format    :  94.5 %
+  character accuracy, with format  :  95.8 %
+  exact plate match, no format     :  75.0 %
+  exact plate match, with format   :  83.0 %
+  time per image                   :  0.32 s
+
+Evaluation on 100 synthetic scenes (test fonts, difficulty 0.80)
+  plate detection (IoU > 0.5)      : 100.0 %
+  correct number of characters     :  89.0 %
+  character accuracy, no format    :  92.1 %
+  character accuracy, with format  :  94.2 %
+  exact plate match, no format     :  67.0 %
+  exact plate match, with format   :  79.0 %
+  time per image                   :  0.30 s
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+Synthetic scene generated (true plate: ZWNG044)
+Plate read: ZWNG044   (0.30 s)
+Ground truth: ZWNG044  ->  CORRECT

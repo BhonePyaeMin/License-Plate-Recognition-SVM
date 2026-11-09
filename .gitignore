@@ -1,0 +1,11 @@
+# local experiments and caches (can be recreated by train_real_model)
+models/_backup/
+models/plate_candidates*.mat
+models/plate_svm*.mat
+models/char_valid*.mat
+models/lpr_svm_model_oa_dev.mat
+# OpenALPR benchmark photos (AGPL-3.0, not redistributed here): see images/real/openalpr/README.md
+images/real/openalpr/*
+!images/real/openalpr/README.md
+*.asv
+*.autosave

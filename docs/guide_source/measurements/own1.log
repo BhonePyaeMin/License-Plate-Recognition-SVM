@@ -1,0 +1,66 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+RES | own_c1.jpg       | none                     | no: no region with enough characters
+RES | own_c1.jpg       | night rec: bilat+CLAHE   | no: no region with enough characters
+RES | own_c1.jpg       | resize x2                | no: plate score too low
+RES | own_c1.jpg       | resize x2 + unsharp      | FOUND DD62IU conf 100% w=133
+RES | own_c1.jpg       | median 3                 | no: no region with enough characters
+RES | own_c1.jpg       | gamma 0.6                | no: plate score too low
+RES | own_c1.jpg       | CLAHE                    | no: plate too small (64 px)
+RES | own_carplate.jpg | none                     | FOUND WH93Y conf 100% w=101
+RES | own_carplate.jpg | night rec: bilat+CLAHE   | FOUND WH93Y conf 100% w=128
+RES | own_carplate.jpg | resize x2                | FOUND WH93Y conf 100% w=233
+RES | own_carplate.jpg | resize x2 + unsharp      | FOUND WH93Y conf 100% w=256
+RES | own_carplate.jpg | median 3                 | FOUND WH93Y conf 100% w=128
+RES | own_carplate.jpg | gamma 0.6                | FOUND WH93Y conf 100% w=117
+RES | own_carplate.jpg | CLAHE                    | FOUND WH93Y conf 100% w=100
+RES | own_dark.jpg     | none                     | no: no region with enough characters
+RES | own_dark.jpg     | night rec: bilat+CLAHE   | no: no region with enough characters
+RES | own_dark.jpg     | resize x2                | no: no region with enough characters
+RES | own_dark.jpg     | resize x2 + unsharp      | FOUND 4TC5 conf 100% w=152
+RES | own_dark.jpg     | median 3                 | no: no region with enough characters
+RES | own_dark.jpg     | gamma 0.6                | no: no region with enough characters
+RES | own_dark.jpg     | CLAHE                    | no: plate too small (84 px)
+RES | own_faraway.jpg  | none                     | no: no region with enough characters
+RES | own_faraway.jpg  | night rec: bilat+CLAHE   | no: no region with enough characters
+RES | own_faraway.jpg  | resize x2                | no: no region with enough characters
+RES | own_faraway.jpg  | resize x2 + unsharp      | no: plate score too low
+RES | own_faraway.jpg  | median 3                 | no: no region with enough characters
+RES | own_faraway.jpg  | gamma 0.6                | no: no region with enough characters
+RES | own_faraway.jpg  | CLAHE                    | no: plate score too low
+RES | own_hidden.jpg   | none                     | no: no region with enough characters
+RES | own_hidden.jpg   | night rec: bilat+CLAHE   | no: no region with enough characters
+RES | own_hidden.jpg   | resize x2                | no: plate score too low
+RES | own_hidden.jpg   | resize x2 + unsharp      | no: no region with enough characters
+RES | own_hidden.jpg   | median 3                 | no: plate score too low
+RES | own_hidden.jpg   | gamma 0.6                | no: no region with enough characters
+RES | own_hidden.jpg   | CLAHE                    | no: no region with enough characters
+RES | own_images.jpg   | none                     | FOUND KA53C6332 conf 100% w=127
+RES | own_images.jpg   | night rec: bilat+CLAHE   | FOUND KA53C31 conf 100% w=127
+RES | own_images.jpg   | resize x2                | FOUND KA53C6332 conf 100% w=254
+RES | own_images.jpg   | resize x2 + unsharp      | FOUND KA53C63321 conf 100% w=193
+RES | own_images.jpg   | median 3                 | FOUND KI53C32 conf 100% w=96
+RES | own_images.jpg   | gamma 0.6                | FOUND KA53C6332 conf 100% w=114
+RES | own_images.jpg   | CLAHE                    | FOUND KA53C30 conf 100% w=127
+RES | own_night0.jpg   | none                     | no: plate score too low
+RES | own_night0.jpg   | night rec: bilat+CLAHE   | no: plate score too low
+RES | own_night0.jpg   | resize x2                | no: plate score too low
+RES | own_night0.jpg   | resize x2 + unsharp      | no: plate score too low
+RES | own_night0.jpg   | median 3                 | no: plate score too low
+RES | own_night0.jpg   | gamma 0.6                | no: plate score too low
+RES | own_night0.jpg   | CLAHE                    | no: plate score too low
+RES | own_night1.jpg   | none                     | FOUND T935AK797 conf 100% w=176
+RES | own_night1.jpg   | night rec: bilat+CLAHE   | FOUND T935AK7 conf 100% w=160
+RES | own_night1.jpg   | resize x2                | FOUND T935AK79 conf 100% w=321
+RES | own_night1.jpg   | resize x2 + unsharp      | FOUND 6688F conf 100% w=321
+RES | own_night1.jpg   | median 3                 | FOUND T93AK797 conf 100% w=160
+RES | own_night1.jpg   | gamma 0.6                | FOUND T935AK797 conf 100% w=160
+RES | own_night1.jpg   | CLAHE                    | FOUND T935AK797 conf 100% w=160
+RES | own_toomany.jpg  | none                     | no: no region with enough characters
+RES | own_toomany.jpg  | night rec: bilat+CLAHE   | no: no region with enough characters
+RES | own_toomany.jpg  | resize x2                | no: no region with enough characters
+RES | own_toomany.jpg  | resize x2 + unsharp      | no: no region with enough characters
+RES | own_toomany.jpg  | median 3                 | no: no region with enough characters
+RES | own_toomany.jpg  | gamma 0.6                | no: no region with enough characters
+RES | own_toomany.jpg  | CLAHE                    | no: no region with enough characters
+OWN1 DONE

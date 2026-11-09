@@ -1,0 +1,15 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 13, exact 5 (31.2 %), character accuracy 72.7 %, 104.86 s/photo
+  day   (16 photos, photos transformed): exact 5 (31.2 %), character accuracy 72.7 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+PERSP | pitch 30 (from above)  | none                   | exact  5/16 | read 13/16 | chars  72.7 % | 104.9 s/photo
+test photos (16): text produced 12, exact 7 (43.8 %), character accuracy 66.0 %, 74.21 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 66.0 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+PERSP | pitch 30 (from above)  | CLAHE 8 tiles, clip 3  | exact  7/16 | read 12/16 | chars  66.0 % | 74.2 s/photo
+test photos (16): text produced 11, exact 4 (25.0 %), character accuracy 59.8 %, 47.54 s/photo
+  day   (16 photos, photos transformed): exact 4 (25.0 %), character accuracy 59.8 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+PERSP | pitch 30 (from above)  | Resize x1.5 + unsharp  | exact  4/16 | read 11/16 | chars  59.8 % | 47.5 s/photo
+PERSP DONE

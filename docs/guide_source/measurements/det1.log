@@ -1,0 +1,11 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+DET | full size      | svm >=   0.0 | plates found 12/16 | boxes per photo 1.1 | false boxes per photo 0.4
+DET | full size      | svm >=  -0.3 | plates found 14/16 | boxes per photo 1.9 | false boxes per photo 1.0
+DET | full size      | svm >=  -0.6 | plates found 14/16 | boxes per photo 2.2 | false boxes per photo 1.4
+DET | full size      | svm >=  -0.9 | plates found 14/16 | boxes per photo 3.4 | false boxes per photo 2.5
+DET | shrunk to 40 % | svm >=   0.0 | plates found 12/16 | boxes per photo 1.2 | false boxes per photo 0.4
+DET | shrunk to 40 % | svm >=  -0.3 | plates found 14/16 | boxes per photo 1.6 | false boxes per photo 0.8
+DET | shrunk to 40 % | svm >=  -0.6 | plates found 14/16 | boxes per photo 2.1 | false boxes per photo 1.2
+DET | shrunk to 40 % | svm >=  -0.9 | plates found 14/16 | boxes per photo 3.0 | false boxes per photo 2.1
+DET1 DONE

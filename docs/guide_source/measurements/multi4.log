@@ -1,0 +1,48 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+MULTI3 | new_bmw_m4         | none      | 0 read, 0 unread | 58 s
+MULTI3 | new_bmw_m4         | small x2  | 0 read, 0 unread | 67 s
+MULTI3 | new_bmw_m4         | CLAHE     | 0 read, 0 unread | 55 s
+MULTI3 | new_bmw_white      | none      | 3 read, 1 unread | 30 s
+   1) M3PLUI       box [105 312 207 52] (orig px width 207) score -0.30 reliable
+   2) TURN         box [183 112 35 15] (orig px width 35) score -0.65 small
+   3) W3PLUS1      box [218 314 72 29] (orig px width 72) score -0.90 small
+   ?1 box [325 305 41 10] (orig px width 41) score -0.14
+MULTI3 | new_bmw_white      | small x2  | 2 read, 1 unread | 39 s
+   1) W3PLI1       box [104 312 208 52] (orig px width 208) score -0.34 reliable
+   2) L3PLUS1      box [207 295 207 56] (orig px width 207) score -1.04 reliable
+   ?1 box [307 614 45 12] (orig px width 45) score 0.02
+MULTI3 | new_bmw_white      | CLAHE     | 3 read, 2 unread | 32 s
+   1) LW3P4E8      box [105 312 207 52] (orig px width 207) score -0.44 reliable
+   2) W3PLIS1      box [218 314 72 29] (orig px width 72) score -0.88 small
+   3) TURN         box [183 112 35 15] (orig px width 35) score -0.82 small
+   ?1 box [276 365 61 15] (orig px width 61) score -0.03
+   ?2 box [322 305 45 11] (orig px width 45) score -0.23
+MULTI3 | new_india          | none      | 1 read, 1 unread | 20 s
+   1) KA53C6332    box [512 249 127 32] (orig px width 127) score 0.60 reliable
+   ?1 box [417 252 69 17] (orig px width 69) score -0.18
+MULTI3 | new_india          | small x2  | 2 read, 1 unread | 29 s
+   1) KA53C63321   box [521 250 97 29] (orig px width 97) score 0.27 reliable
+   2) K402X        box [108 335 36 14] (orig px width 36) score -1.16 small
+   ?1 box [413 251 76 19] (orig px width 76) score -0.14
+MULTI3 | new_india          | CLAHE     | 2 read, 0 unread | 20 s
+   1) KA3C32       box [509 249 127 32] (orig px width 127) score 0.55 reliable
+   2) K402K        box [108 335 35 14] (orig px width 35) score -0.75 small
+MULTI3 | new_sandiego       | none      | 0 read, 1 unread | 56 s
+   ?1 box [1145 630 254 64] (orig px width 254) score -0.15
+MULTI3 | new_sandiego       | small x2  | 1 read, 1 unread | 104 s
+   1) 1RAI1        box [1341 822 182 135] (orig px width 182) score -1.12 reliable
+   ?1 box [1157 633 280 70] (orig px width 280) score -0.23
+MULTI3 | new_sandiego       | CLAHE     | 0 read, 1 unread | 106 s
+   ?1 box [1145 624 254 64] (orig px width 254) score -0.13
+MULTI3 | new_night_traffic  | none      | 2 read, 0 unread | 87 s
+   1) T935AK797    box [346 496 176 44] (orig px width 176) score 0.53 reliable
+   2) 6688EP       box [1342 483 90 30] (orig px width 90) score -0.38 reliable
+MULTI3 | new_night_traffic  | small x2  | 2 read, 0 unread | 138 s
+   1) 6688F        box [1311 478 161 40] (orig px width 161) score 0.51 reliable
+   2) T935AK797    box [353 502 161 40] (orig px width 161) score 0.48 reliable
+MULTI3 | new_night_traffic  | CLAHE     | 2 read, 1 unread | 84 s
+   1) T935AK797    box [354 502 160 40] (orig px width 160) score 0.37 reliable
+   2) 6688EP2      box [1312 478 160 40] (orig px width 160) score 0.33 reliable
+   ?1 box [1 145 160 40] (orig px width 160) score -0.17
+MULTI3 DONE

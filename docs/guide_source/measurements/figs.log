@@ -1,0 +1,104 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+FIG night_lit_1.png | none | LJ6J
+FIG night_lit_2.png | bilateral | LJ6J
+FIG night_lit_3.png | CLAHE | LJ6J
+FIG night_lit_4.png | gamma 0.6 | LJGJ
+FIG night_dark_1.png | none | no plate (no region with enough characters)
+FIG night_dark_2.png | bilateral | no plate (no region with enough characters)
+FIG night_dark_3.png | CLAHE | LJG1
+FIG night_dark_4.png | gamma 0.6 | no plate (no region with enough characters)
+FIG small_1.png | none | LJ67CTU
+FIG small_2.png | enlarge x2 | LJ67CTU
+FIG small_3.png | enlarge x2 + unsharp | LJ67CTU
+FIG dots_1.png | none | LJ67CTU
+FIG dots_2.png | median 3x3 | LJ67CTU
+FIG grain_1.png | none | LJ67CTU
+FIG grain_2.png | bilateral | LJ67CTU
+FIG grain_3.png | Gaussian 5x5 | LJ67CTU
+FIG grain_4.png | median 3x3 | LJ67CTU
+FIG blur_1.png | none | LJ67CTU
+FIG blur_2.png | unsharp | LJ67CTU
+FIG blur_3.png | Richardson-Lucy | LJ67CTU
+FIG flat_1.png | none | LJ67CTU
+FIG flat_2.png | stretching | LJ67CTU
+FIG shade_1.png | none | LJ67CTU
+FIG shade_2.png | illumination corr. | LJ67CTU
+FIG persp_car_18_front_1.png | none | LJ67CTU
+FIG persp_car_18_front_2.png | CLAHE | LJ67CTU
+FIG persp_car_18_front_3.png | enlarge x1.5 + unsharp | LJ67CTU
+FIG persp_car_18_yaw30_1.png | none | LJ67CIU
+FIG persp_car_18_yaw30_2.png | CLAHE | LJ67CTU
+FIG persp_car_18_yaw30_3.png | enlarge x1.5 + unsharp | LJ67CTU
+FIG persp_car_18_yaw50_1.png | none | LJ67CTU
+FIG persp_car_18_yaw50_2.png | CLAHE | J67C
+FIG persp_car_18_yaw50_3.png | enlarge x1.5 + unsharp | LJ67CTU
+FIG persp_car_18_pitch30_1.png | none | LJ67CT
+FIG persp_car_18_pitch30_2.png | CLAHE | LJ67CTU
+
+------------------------------------------------------------------------
+          Access violation detected at Mon Oct 26 16:02:50 2026
+------------------------------------------------------------------------
+Architecture     : win64
+Processor ID     : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+Host Name        : LAPTOP-29UDKLV8
+Locale           : en_US
+
+
+Abnormal termination:
+Access violation
+
+Current Thread: '' id 20652
+
+Register State (from fault):
+  RAX = 000002078d634190  RBX = 0000000000000000
+  RCX = 0000000000000000  RDX = 000002078d7d3c40
+  RSP = 000000c141ffed70  RBP = 000002078d981b70
+  RSI = 00000100000001b3  RDI = 000002078d633950
+ 
+   R8 = 7ffffffffffffffc   R9 = 0000000000000000
+  R10 = 00000207883e0000  R11 = 000000000000000d
+  R12 = 00000000ffffffff  R13 = cbf29ce484222325
+  R14 = 000002078d981ba8  R15 = 000002078cab5e90
+ 
+  RIP = 00007ffadaeef6a8  EFL = 00010287
+ 
+   CS = 0033   FS = 0053   GS = 002b
+
+Stack Trace (from fault):
+[  0] 0x00007ffadaeef6a8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00325288 cppmicroservices::ServiceReferenceFromService+00001560
+[  1] 0x00007ffadaee7dc8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00294344 cppmicroservices::ServiceObjects<void>::GetServiceReference+00001896
+[  2] 0x00007ffadaee64b3 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00287923 cppmicroservices::ServiceObjectsBase::ServiceObjectsBase+00000307
+[  3] 0x00007ffadaee78d7 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00293079 cppmicroservices::ServiceObjects<void>::GetServiceReference+00000631
+[  4] 0x00007ffad4446b94 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00813972
+[  5] 0x00007ffad4499343 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01151811
+[  6] 0x00007ffad4499521 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01152289
+[  7] 0x00007ffad4453515 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00865557
+[  8] 0x00007ffad445a267 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00893543
+[  9] 0x00007ffad444084d C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00788557
+[ 10] 0x00007ffad444d7f5 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00841717
+[ 11] 0x00007ffad445778b C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00882571
+[ 12] 0x00007ffad43c3241 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00275009
+[ 13] 0x00007ffb5593cd30                   C:\WINDOWS\System32\ucrtbase.dll+00183600 wcsrchr+00000336
+[ 14] 0x00007ffb5662dda7                   C:\WINDOWS\System32\KERNEL32.DLL+00187815 BaseThreadInitThunk+00000023
+[ 15] 0x00007ffb585dee4c                      C:\WINDOWS\SYSTEM32\ntdll.dll+00519756 RtlUserThreadStart+00000044
+
+
+** This crash report has been written to C:\Users\66877\AppData\Local\MathWorks\ServiceHost\logs\MathWorksServiceHost_crash_20468.log **
+FIG persp_car_18_pitch30_3.png | enlarge x1.5 + unsharp | LJ67CT
+FIG persp_car_30_front_1.png | none | HZF448
+FIG persp_car_30_front_2.png | CLAHE | HZF440
+FIG persp_car_30_front_3.png | enlarge x1.5 + unsharp | HZF440
+FIG persp_car_30_yaw30_1.png | none | no plate (plate score too low)
+FIG persp_car_30_yaw30_2.png | CLAHE | HZF448
+FIG persp_car_30_yaw30_3.png | enlarge x1.5 + unsharp | HZF448
+FIG persp_car_30_yaw50_1.png | none | no plate (no region with enough characters)
+FIG persp_car_30_yaw50_2.png | CLAHE | no plate (no region with enough characters)
+FIG persp_car_30_yaw50_3.png | enlarge x1.5 + unsharp | no plate (plate score too low)
+FIG persp_car_30_pitch30_1.png | none | HZF448
+FIG persp_car_30_pitch30_2.png | CLAHE | HZF440
+FIG persp_car_30_pitch30_3.png | enlarge x1.5 + unsharp | HZF440
+FIG own_dark_1.png | none | no plate (no region with enough characters)
+FIG own_dark_2.png | enlarge x2 + unsharp | 4TC5
+FIG own_dark_3.png | CLAHE | no plate (no region with enough characters)
+FIGS DONE

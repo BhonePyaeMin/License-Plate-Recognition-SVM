@@ -1,0 +1,338 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Filter guide for licence-plate recognition</title><style>
+@page { size: A4; margin: 15mm 14mm 16mm 14mm; }
+body { font-family: 'Segoe UI', 'Myanmar Text', Arial, sans-serif; font-size: 10.2pt; line-height: 1.42; color: #1b1f24; }
+h1 { font-size: 22pt; margin: 0 0 4px 0; color: #0b3d66; }
+h2 { font-size: 15pt; color: #0b3d66; border-bottom: 2px solid #0b3d66; padding-bottom: 3px; margin: 22px 0 8px 0; page-break-after: avoid; }
+h3 { font-size: 12.2pt; color: #0b3d66; margin: 14px 0 4px 0; page-break-after: avoid; }
+p { margin: 4px 0; }
+p.my { font-family: 'Myanmar Text', 'Segoe UI', sans-serif; line-height: 1.7; color: #243447; border-left: 3px solid #c9a227; padding-left: 8px; margin-left: 2px; }
+.sub { color: #55606b; font-size: 9.4pt; }
+.sec { page-break-inside: avoid; }
+.situation { page-break-inside: avoid; margin-bottom: 8px; }
+.chain { background: #eef5fb; border: 1px solid #b9d3ea; border-radius: 5px; padding: 6px 9px; margin: 6px 0; font-family: Consolas, monospace; font-size: 9.6pt; }
+.nochain { background: #fff4e0; border: 1px solid #e8c581; }
+table { border-collapse: collapse; width: 100%; margin: 6px 0 10px 0; font-size: 9.2pt; page-break-inside: avoid; }
+th, td { border: 1px solid #c8d0d8; padding: 3px 6px; vertical-align: top; text-align: left; }
+th { background: #e6eef6; }
+td.n, th.n { text-align: center; white-space: nowrap; }
+.warnc { color: #a15c00; font-weight: 600; } .good { color: #1a7f37; font-weight: 600; } .badc { color: #b3261e; font-weight: 600; } .mute { color: #6b7782; }
+.figrow { display: grid; gap: 8px; margin: 6px 0 8px 0; }
+.cell { min-width: 0; }
+.cell img { width: 100%; border: 1px solid #b0b8c0; display: block; image-rendering: auto; }
+.cap { font-size: 8.6pt; text-align: center; margin-top: 2px; }
+.ok { color: #1a7f37; font-weight: 700; } .mid { color: #a15c00; font-weight: 700; } .bad { color: #b3261e; font-weight: 700; }
+.box { border: 1px solid #c8d0d8; border-radius: 6px; padding: 6px 10px; background: #f7f9fb; margin: 8px 0; }
+.warn { background: #fff4e0; border-color: #e8c581; }
+ol li, ul li { margin-bottom: 3px; }
+.small { font-size: 8.8pt; }
+.pg { page-break-before: always; }
+.filter { page-break-inside: avoid; border-top: 1px solid #dde3e9; padding-top: 4px; margin-top: 6px; }
+.filter h3 { margin-top: 4px; }
+.lab { font-weight: 700; color: #0b3d66; }
+img.shot { max-width: 100%; border: 1px solid #b0b8c0; }
+</style></head><body>
+<h1>Filter guide for licence-plate recognition</h1>
+<p class="sub">Which filter for which photo: night, small and big plates, any perspective view. Measured with the MATLAB project "License Plate Recognition Using SVM" (October 2026).</p>
+<div class="box"><p class="en ">A filter changes the pixels of the photo before the program looks for the plate. It helps only when the photo has the problem that the filter cures. The program already repairs brightness and contrast by itself, so most photos need no filter at all, and the wrong filter makes things worse: in the tests a Gaussian blur cost 3 of 16 plates, and on one of your own night photos an enlargement + sharpening turned a correct reading into a wrong one. For every situation this guide says which filters were tested, which helped and which did not.</p></div>
+<h2>How to use the filter panel</h2>
+<ol><li><span>Start MATLAB, type clear all and then LPR_Toolbox (one line at a time). Press "Open image..." and choose your photo (JPG, PNG or JFIF).</span><br></li><li><span>Look at the photo and decide its situation: night? plate small or far (narrower than about 100 pixels)? big and close? seen from the side or from above? noisy, blurry, flat or shaded?</span><br></li><li><span>In the panel on the right open the list "Situation" and choose it. The text below the buttons tells you what to do. Press "Use recommended": the four filter rows "Filter 1" to "Filter 4" are filled in for you (for night, big and glare photos they are cleared, because no filter is the best choice). For photos with several cars it also ticks "Find ALL plates".</span><br></li><li><span>Press "Recognise on filtered photo". The plate is searched in the filtered photo. If nothing is found, the text says whether the original photo reads: then the filters made it worse.</span><br></li><li><span>Press "Compare with original" to see both readings. Keep the filter only if the reading gets better. "Remove filters" goes back to the original photo.</span><br></li><li><span>To add filters by hand: below "Border (padding)" there are four rows, "Filter 1" to "Filter 4". Click the list of Filter 1 (it says "(none)"), choose a filter and type the numbers into the white fields under it; the explanation of the filter appears in the text box. "Enlarge text" shows that text in a big window.</span><br></li></ol>
+<p><img class="shot" style="max-width:62%" src="fig_jpg/gui_panel.jpg"></p><p class="sub">The filter panel on the right of the window.</p>
+<h2>Quick answer: which filter for which situation</h2>
+<table class=""><tr><th>Situation</th><th>Filters (in this order)</th><th>What was measured</th></tr><tr><td>Night view (dark photo, lamp glare)</td><td><span class="badc">no filter</span></td><td>No filter beat doing nothing (without a filter: lit street 8 of 16, very dark 6 of 16); the program now also searches an equalised copy by itself.</td></tr><tr><td>Small or far plate (under about 100 pixels wide)</td><td>1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</td><td>4 -&gt; 6 plates of 16 (photos shrunk to 40 %).</td></tr><tr><td>Big, close plate (over about 300 pixels wide)</td><td><span class="badc">no filter</span></td><td>No filter; shrinking the photo cost 3 plates (8 -&gt; 5).</td></tr><tr><td>Angled plate (seen from the side)</td><td>1. Resize (change the resolution): Scale 1.5, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</td><td>Real oblique photos 1 -&gt; 2 of 6; photos turned 30 degrees 5 -&gt; 8, 50 degrees 4 -&gt; 6 (of 16).</td></tr><tr><td>Seen from above (high camera)</td><td>1. Local histogram equalisation (CLAHE): Tiles 8, Clip limit 3</td><td>Simulated 30 degrees: local equalisation 5 -&gt; 7 plates (fewer characters right); enlarging did harm (5 -&gt; 4).</td></tr><tr><td>Night, small or far plate (street lit)</td><td>1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</td><td>Lit street: 5 -&gt; 7 plates of 16; very dark: 4 -&gt; 2 (worse).</td></tr><tr><td>Many cars in the photo (traffic)</td><td><span class="badc">no filter</span></td><td>Ticks "Find ALL plates"; plates under 30 pixels are neither found nor read.</td></tr><tr><td>Many cars at night</td><td><span class="badc">no filter</span></td><td>Ticks "Find ALL plates"; your night traffic photo: 2 of 3 plates found.</td></tr><tr><td>Any vehicle: motorcycle, scooter, bus, truck, taxi</td><td>1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</td><td>Ticks "Find ALL plates" and enlarges 2 times; two-line motorcycle plates: only one row.</td></tr><tr><td>White and black dots (salt-and-pepper noise)</td><td>1. Median filter: Window 3</td><td>5 -&gt; 7 plates of 16 (but 5 points fewer characters right).</td></tr><tr><td>Grainy photo (Gaussian noise, high ISO)</td><td>1. Bilateral filter (edge-preserving): Spatial sigma 1.5, Range sigma 0.15</td><td>8 -&gt; 9 plates; Gaussian blur 5, median 6.</td></tr><tr><td>Blurry photo (out of focus or shaky)</td><td>1. Unsharp masking: Amount 1.5, Blur sigma 1.5</td><td>5 -&gt; 6 plates: small and not reliable.</td></tr><tr><td>Low contrast (haze, fog, rain, dirty glass)</td><td>1. Contrast stretching: Low % 1, High % 99</td><td>9 -&gt; 9 plates; characters 81.2 -&gt; 83.0 %.</td></tr><tr><td>Shadow or uneven light across the photo</td><td>1. Illumination correction: Blur sigma 40, Strength 1</td><td>6 -&gt; 8 plates (characters 72.0 -&gt; 70.3 %).</td></tr><tr><td>Glare or burnt-out plate (head-lamp, flash, sun)</td><td><span class="badc">no filter</span></td><td>Nothing to measure: take the photo again.</td></tr><tr><td>Photo of a screen (pixel grid, moire)</td><td>1. Frequency low-pass (noise): Cut-off 0.5</td><td>Not measured: open the original file instead.</td></tr></table>
+<div class="box warn"><p class="en ">Honest limits. All numbers come from only 16 held-out test photos: a difference of one or two plates is a hint, not a proof. The night photos in the tests are simulated (darkened, orange lamp colour, noise), not real night photographs. No filter can create detail that was never recorded, bring back burnt-out white or read a plate that is hidden.</p></div>
+<h2 class="pg">The situations, one by one</h2>
+<div class="situation"><h3>Night view (dark photo, lamp glare)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain nochain">No filter: the best choice is the original photo (leave Filter 1 to Filter 4 empty).</div>
+<p class="lab">Why</p>
+<p class="en ">The program repairs the brightness of a dark photo itself and also searches a locally equalised copy of it for the plate, so no filter is needed for the search. Filters added on top did not beat doing nothing on the test photos (they amplify the noise of a dark photo). What decides a night photo is the plate: about 100 pixels wide and not burnt out by a lamp. Plate smaller than that: choose "Night, small or far plate"; several cars: "Many cars at night".</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured on the 16 test photos made to look like night (darkened, orange lamp cast, two glows, noise), exact plates / characters. Lit street: none 7 / 62.3 %, bilateral 6 / 60.5 %, local equalisation 6 / 58.0 %, bilateral + local equalisation 6 / 60.6 %, gamma 0.6 6 / 66.5 %, median 7 / 62.6 %. Very dark: none 6 / 61.9 %, bilateral 5 / 53.8 % (4 / 48.9 % with a fixed sigma_r), local equalisation 5 / 46.4 %, bilateral + local equalisation 4 / 44.8 %, gamma 0.6 6 / 60.1 %, median 6 / 51.0 %. With the final code (night search + character splitting) doing nothing reads 8 and 6 plates (68.6 % and 61.9 % of the characters); the filters above were compared with the earlier code. These are simulated, not real night photographs.</p>
+<p class="sub small">Photo car_18 darkened like a lit street, orange lamp cast and noise (simulated). Red outline = plate accepted by the program.</p>
+<div class="figrow" style="grid-template-columns: repeat(4, 1fr)"><div class="cell"><img src="fig_jpg/night_lit_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads LJ6J</span></div></div><div class="cell"><img src="fig_jpg/night_lit_2.jpg"><div class="cap"><b>bilateral</b><br><span class="mid">reads LJ6J</span></div></div><div class="cell"><img src="fig_jpg/night_lit_3.jpg"><div class="cap"><b>CLAHE</b><br><span class="mid">reads LJ6J</span></div></div><div class="cell"><img src="fig_jpg/night_lit_4.jpg"><div class="cap"><b>gamma 0.6</b><br><span class="mid">reads LJGJ</span></div></div></div>
+<p class="sub small">The same photo, very dark (simulated).</p>
+<div class="figrow" style="grid-template-columns: repeat(4, 1fr)"><div class="cell"><img src="fig_jpg/night_dark_1.jpg"><div class="cap"><b>none</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/night_dark_2.jpg"><div class="cap"><b>bilateral</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/night_dark_3.jpg"><div class="cap"><b>CLAHE</b><br><span class="mid">reads LJG1</span></div></div><div class="cell"><img src="fig_jpg/night_dark_4.jpg"><div class="cap"><b>gamma 0.6</b><br><span class="bad">no plate</span></div></div></div>
+</div>
+<div class="situation"><h3>Small or far plate (under about 100 pixels wide)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">A small plate has few pixels per character, so the strokes of the characters merge. Enlarging with bicubic interpolation gives the segmentation smoother edges to work with, and a mild unsharp mask makes the strokes steeper again. It cannot add detail: below about 40 pixels of plate width nothing helps. Better: get closer, or use 'Pick car' on a bigger photo.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured on the 16 test photos shrunk to 40 % (plates 58 to 240 pixels wide), exact plates / characters: none 4 / 58.0 %, enlarge x2 bicubic 5 / 59.4 %, enlarge x2 + unsharp 6 / 63.2 %, unsharp only 5 / 62.4 %. About +2 plates; with 16 photos this is a hint.</p>
+<p class="sub small">Photo car_12 shrunk to 40 % (the plate is about 90 pixels wide).</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/small12_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads LAZL706</span></div></div><div class="cell"><img src="fig_jpg/small12_2.jpg"><div class="cap"><b>enlarge x2</b><br><span class="ok">&#10003; 4AZ4706</span></div></div><div class="cell"><img src="fig_jpg/small12_3.jpg"><div class="cap"><b>enlarge x2 + unsharp</b><br><span class="ok">&#10003; 4AZ4706</span></div></div></div>
+<p class="sub small">Photo car_09 shrunk to 40 % (the plate is about 114 pixels wide).</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/small09_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; 011CD228</span></div></div><div class="cell"><img src="fig_jpg/small09_2.jpg"><div class="cap"><b>enlarge x2</b><br><span class="ok">&#10003; 011CD228</span></div></div><div class="cell"><img src="fig_jpg/small09_3.jpg"><div class="cap"><b>enlarge x2 + unsharp</b><br><span class="ok">&#10003; 011CD228</span></div></div></div>
+</div>
+<div class="situation"><h3>Big, close plate (over about 300 pixels wide)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain nochain">No filter: the best choice is the original photo (leave Filter 1 to Filter 4 empty).</div>
+<p class="lab">Why</p>
+<p class="en ">A big plate already has plenty of pixels per character; filtering only risks blurring or adding noise. Use no filter. Do not shrink the photo to save time: that was the worst choice in the test.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured on the 16 original test photos (1920 pixels wide), exact plates / characters: none 8 / 74.6 %, shrink to 0.5 5 / 61.4 %, Gaussian 3 x 3 7 / 73.7 %, unsharp masking 7 / 67.5 %.</p>
+</div>
+<div class="situation"><h3>Angled plate (seen from the side)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Resize (change the resolution): Scale 1.5, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">An angled plate is mainly a shape problem: the characters are squeezed and slanted. The program straightens the plate itself (perspective correction), and no filter can do that; but enlarging 1.5 times gives the squeezed characters more pixels and a mild unsharp mask makes their strokes steeper. It helped on side views, but it is no cure for steep angles (from 50 degrees on most plates stay unreadable): photograph from the front if you can. Check with "Compare with original".</p>
+<p class="lab">What was measured</p>
+<p class="en small">Plates read exactly of 16 (characters correct), no filter / enlarge x1.5 + unsharp (1, 1.2): the 6 real oblique test photos 1 / 2 of 6; the 16 test photos turned 30 degrees to the side 5 (56.1 %) / 8 (65.0 %); turned 50 degrees 4 (48.2 %) / 6 (58.4 %). On the front-view photos the plates went from 8 to 9 but the characters from 74.6 % to 71.5 %. The turned photos are simulations (homography).</p>
+</div>
+<div class="situation"><h3>Seen from above (high camera)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Local histogram equalisation (CLAHE): Tiles 8, Clip limit 3</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">From above the plate is squeezed vertically and the characters get short; the program straightens it itself. Local histogram equalisation gave more plates in the simulation but fewer correct characters, and enlarging + sharpening did harm here. Treat it as a try: press "Compare with original" and keep the filter only if the reading gets better.</p>
+<p class="lab">What was measured</p>
+<p class="en small">The 16 test photos turned 30 degrees about the horizontal axis (simulated). Plates read exactly of 16 (characters correct): no filter 5 (72.7 %); local equalisation 7 (66.0 %); enlarge x1.5 + unsharp 4 (59.8 %).</p>
+</div>
+<div class="situation"><h3>Night, small or far plate (street lit)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">A small plate at night needs the same help as a small plate by day: enlarging 2 times gives the characters more pixels and a mild unsharp mask makes their strokes steeper. The program also searches an equalised copy of a dark photo by itself. Use it only when the street is lit: for a very dark photo enlarging made things worse. Below about 40 pixels of plate width nothing helps; a plate lit red by the tail lights with lamp glare on its characters (your dark.jpg) is located but not read.</p>
+<p class="lab">What was measured</p>
+<p class="en small">The 16 test photos shrunk to 40 % and made to look like a lit street at night: no filter 5 plates (49.8 % of the characters), enlarge x2 + unsharp 7 (63.3 %), plus gamma 0.6 5 (56.0 %). Very dark photos: no filter 4 (43.6 %), enlarge x2 + unsharp 2 (28.5 %), plus gamma 0.6 2 (21.1 %): enlarging a very dark photo does harm. Check with "Compare with original".</p>
+</div>
+<div class="situation"><h3>Many cars in the photo (traffic)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain nochain">No filter: the best choice is the original photo (leave Filter 1 to Filter 4 empty).</div>
+<p class="lab">Why</p>
+<p class="en ">Ticks "Find ALL plates": every plate the program accepts is boxed (red: 90 pixels wide or more, orange: smaller, reading unreliable) and listed with its reading; plate-like regions that could not be read get grey dashed boxes. On a road photo with far cars the plates are 20 to 30 pixels wide: no filter makes them readable. A bigger photo or "Pick car..." (tab 4 Plate) is the cure.</p>
+<p class="lab">What was measured</p>
+<p class="en small">On the 16 test photos a region with a plate-SVM score of at least -0.3 contained the plate in 14 of 16 photos, also when shrunk to 40 %, with about 1 false region per photo. On your day traffic photo (640 x 480) the two nearest plates are only 23 and 26 pixels wide: nothing was found or read, with or without a filter (enlarging 2 and 3 times, gamma, local equalisation).</p>
+</div>
+<div class="situation"><h3>Many cars at night</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain nochain">No filter: the best choice is the original photo (leave Filter 1 to Filter 4 empty).</div>
+<p class="lab">Why</p>
+<p class="en ">Like "Many cars in the photo", for a dark photo: every plate is searched, and an equalised copy of the dark photo is searched automatically. No filter is recommended (none helped on dark photos). Plates that are small, lit red or hidden in lamp glare are often found but read wrongly or not at all.</p>
+<p class="lab">What was measured</p>
+<p class="en small">One real night traffic photo of yours (1710 x 855, three plates): 2 plates found, the Mini T935AK797 (read right with every filter tried) and the dark SUV 6688 EP-2 (read 6688EP; 6688EP2 with local equalisation or enlarging 3 times, otherwise 6688F or 6688H); the white car (plate about 70 pixels) was missed. One photo is a hint only.</p>
+</div>
+<div class="situation"><h3>Any vehicle: motorcycle, scooter, bus, truck, taxi</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Resize (change the resolution): Scale 2, Interp. 1-3 3<br>2. Unsharp masking: Amount 1, Blur sigma 1.2</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">Ticks "Find ALL plates", because several vehicles are in the photo, and enlarges the photo 2 times: the small plate of a scooter or a far bus only shows up after that. The search is the same as for cars (trained on car plates). Two-line motorcycle plates are not supported: only one row is found and read. Buses and trucks with a car-like plate are treated like cars (not measured, no test photos). Also, a road sign with real letters can be read as a plate (a "NO TURN ON RED" sign gave TURN).</p>
+<p class="lab">What was measured</p>
+<p class="en small">Your Indian street photo: without a filter 1 plate read (the taxi, KA53C6332 for KA53C6932, one character wrong); with enlarge x2 + unsharp 2 (the taxi, KA53C63321, and the upper row of the two-line scooter plate KA02K read as K402X). One photo: a hint only.</p>
+</div>
+<div class="situation"><h3>White and black dots (salt-and-pepper noise)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Median filter: Window 3</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">Isolated white or black dots cannot be the middle value of their neighbours, so a 3 x 3 median removes them and keeps the edges of the characters. Use 5 x 5 only when more than 8 % of the pixels are dots.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured: 5 exact plates of 16 without, 7 with the median (but 68.6 % -&gt; 63.3 % of the characters).</p>
+<p class="sub small">Photo car_18 with 5 % white and black dots. It is read correctly even without a filter: moderate noise rarely breaks the recogniser, so a filter matters only for harder photos.</p>
+<div class="figrow" style="grid-template-columns: repeat(2, 1fr)"><div class="cell"><img src="fig_jpg/dots_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/dots_2.jpg"><div class="cap"><b>median 3x3</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+</div>
+<div class="situation"><h3>Grainy photo (Gaussian noise, high ISO)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Bilateral filter (edge-preserving): Spatial sigma 1.5, Range sigma 0.15</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">Grain changes every pixel a little; a median would round off thin strokes and a Gaussian blur would smear them. The bilateral filter averages only neighbours of similar brightness, so flat areas become clean and the strokes stay sharp.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured: 8 -&gt; 9 exact plates of 16 with bilateral; Gaussian 5x5 gave 5 and median 6.</p>
+<p class="sub small">Photo car_18 with Gaussian noise (sigma 0.06). Read correctly even without a filter, see above.</p>
+<div class="figrow" style="grid-template-columns: repeat(4, 1fr)"><div class="cell"><img src="fig_jpg/grain_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/grain_2.jpg"><div class="cap"><b>bilateral</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/grain_3.jpg"><div class="cap"><b>Gaussian 5x5</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/grain_4.jpg"><div class="cap"><b>median 3x3</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+</div>
+<div class="situation"><h3>Blurry photo (out of focus or shaky)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Unsharp masking: Amount 1.5, Blur sigma 1.5</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">Unsharp masking makes the blurred edges steeper; Richardson-Lucy deblurring tries to reverse a Gaussian blur. Honest answer: the gain is small and not reliable, and motion blur is not repaired. Take the photo again if you can.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured: 5 exact plates of 16 without; unsharp 6, Richardson-Lucy 5 (characters 64.7 % -&gt; 62.4 % and 66.4 %).</p>
+<p class="sub small">Photo car_18 out of focus (Gaussian blur, sigma 2). Read correctly even without a filter.</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/blur_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/blur_2.jpg"><div class="cap"><b>unsharp</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/blur_3.jpg"><div class="cap"><b>Richardson-Lucy</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+</div>
+<div class="situation"><h3>Low contrast (haze, fog, rain, dirty glass)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Contrast stretching: Low % 1, High % 99</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">Everything lies in a narrow band of grey levels. Stretching the 1 % to 99 % range to full black and white restores the difference between the strokes and the plate. The program does this by itself for very flat photos, so the filter is mostly for looking.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured: 9 exact plates of 16 both ways; characters 81.2 % -&gt; 83.0 %.</p>
+<p class="sub small">Photo car_18 with the contrast squeezed to 30 %. Read correctly even without a filter.</p>
+<div class="figrow" style="grid-template-columns: repeat(2, 1fr)"><div class="cell"><img src="fig_jpg/flat_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/flat_2.jpg"><div class="cap"><b>stretching</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+</div>
+<div class="situation"><h3>Shadow or uneven light across the photo</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Illumination correction: Blur sigma 40, Strength 1</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">A shadow across the plate hides the strokes on the dark side. Dividing by the slowly changing light brings both sides to the same level. Local histogram equalisation is the alternative. Do not add a gamma: the program already repairs the overall brightness.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Measured: 6 exact plates of 16 without, 8 with illumination correction (characters 72.0 % -&gt; 70.3 %). A suggested gamma made it worse (4 of 16).</p>
+<p class="sub small">Photo car_18 with the right side 4 times darker. Read correctly even without a filter.</p>
+<div class="figrow" style="grid-template-columns: repeat(2, 1fr)"><div class="cell"><img src="fig_jpg/shade_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/shade_2.jpg"><div class="cap"><b>illumination corr.</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+</div>
+<div class="situation"><h3>Glare or burnt-out plate (head-lamp, flash, sun)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain nochain">No filter: the best choice is the original photo (leave Filter 1 to Filter 4 empty).</div>
+<p class="lab">Why</p>
+<p class="en ">Pixels that are pure white carry no information any more: no filter can bring the characters back. The program refuses regions with more than a third saturated pixels (penalty). Re-take the photo from another angle or without flash.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Not a filter problem; nothing to measure.</p>
+</div>
+<div class="situation"><h3>Photo of a screen (pixel grid, moire)</h3>
+<p class="lab">Filters to put into Filter 1, Filter 2 ...</p>
+<div class="chain">1. Frequency low-pass (noise): Cut-off 0.5</div>
+<p class="small">To add them yourself: click the list of Filter 1 (it says "(none)"), choose the filter, type the numbers in brackets into the white fields under it, then do the same for Filter 2. Press "Recognise on filtered photo".</p>
+<p class="lab">Why</p>
+<p class="en ">A camera pointed at a monitor records the monitor's own pixel grid and colour fringes. They are regular and very fine, so a low-pass filter in the frequency domain removes them. Best of all: do not photograph the screen; open the original image file in the app.</p>
+<p class="lab">What was measured</p>
+<p class="en small">Not measured (no test photos of screens); a reasoned recommendation only.</p>
+</div>
+<h2 class="pg">Any perspective view: from the front, from the side, from above</h2>
+<p class="en ">A plate seen from the side or from above is squeezed and slanted. The program straightens it by itself (perspective correction with a homography) whenever the detected plate looks skewed; no filter can do that. To see what filters add at different views, the 16 test photos were turned with a homography about the vertical axis (yaw: the car is seen from the side) and about the horizontal axis (pitch: seen from above) and read again, with and without a filter.</p>
+<p class="lab">Plates read exactly, of the 16 test photos turned into that view (share of correct characters in brackets):</p>
+<table class="n"><tr><th>View</th><th>no filter</th><th>CLAHE</th><th>enlarge x1.5 + unsharp</th></tr><tr><td>frontal (as photographed)</td><td><b>8</b>/16 <span class="mute">(74.6 %)</span></td><td><b>9</b>/16 <span class="mute">(70.7 %)</span></td><td><b>9</b>/16 <span class="mute">(71.5 %)</span></td></tr><tr><td>seen from the side, 30 degrees</td><td><b>5</b>/16 <span class="mute">(56.1 %)</span></td><td><b>7</b>/16 <span class="mute">(70.2 %)</span></td><td><b>8</b>/16 <span class="mute">(65.0 %)</span></td></tr><tr><td>seen from the side, 50 degrees</td><td><b>4</b>/16 <span class="mute">(48.2 %)</span></td><td><b>3</b>/16 <span class="mute">(50.6 %)</span></td><td><b>6</b>/16 <span class="mute">(58.4 %)</span></td></tr><tr><td>seen from above, 30 degrees</td><td><b>5</b>/16 <span class="mute">(72.7 %)</span></td><td><b>7</b>/16 <span class="mute">(66.0 %)</span></td><td><b>4</b>/16 <span class="mute">(59.8 %)</span></td></tr></table>
+<p class="en small">Reading the table: without a filter the plates read fall from 8 of 16 (front) to 5 at 30 degrees, 4 at 50 degrees and 5 from above. From the side, enlarging 1.5 times + mild unsharp masking gave the most plates (8 and 6); local equalisation helped at 30 degrees only. From above, local equalisation gave more plates (7) but fewer correct characters, and enlarging + sharpening did harm (4). Gains are one to three plates out of 16 and the characters sometimes went down: a hint, not a proof. The front row for the two filters comes from the earlier run on the original photos. The 6 real oblique photos of the test set read 1 of 6 without a filter, 2 of 6 with enlarging + unsharp masking and 3 of 6 with local equalisation.</p>
+<h3>frontal photo (car_18)</h3>
+<p class="sub">as photographed</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_18_front_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_front_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_front_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+<p class="sub">from the side 30 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_18_yaw30_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads LJ67CIU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_yaw30_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_yaw30_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+<p class="sub">from the side 50 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_18_yaw50_1.jpg"><div class="cap"><b>none</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_yaw50_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="mid">reads J67C</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_yaw50_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="ok">&#10003; LJ67CTU</span></div></div></div>
+<p class="sub">from above 30 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_18_pitch30_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads LJ67CT</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_pitch30_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="ok">&#10003; LJ67CTU</span></div></div><div class="cell"><img src="fig_jpg/persp_car_18_pitch30_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="mid">reads LJ67CT</span></div></div></div>
+<h3>oblique photo (car_30)</h3>
+<p class="sub">as photographed</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_30_front_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads HZF448</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_front_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="ok">&#10003; HZF440</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_front_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="ok">&#10003; HZF440</span></div></div></div>
+<p class="sub">from the side 30 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_30_yaw30_1.jpg"><div class="cap"><b>none</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_yaw30_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="mid">reads HZF448</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_yaw30_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="mid">reads HZF448</span></div></div></div>
+<p class="sub">from the side 50 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_30_yaw50_1.jpg"><div class="cap"><b>none</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_yaw50_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_yaw50_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="bad">no plate</span></div></div></div>
+<p class="sub">from above 30 deg</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/persp_car_30_pitch30_1.jpg"><div class="cap"><b>none</b><br><span class="mid">reads HZF448</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_pitch30_2.jpg"><div class="cap"><b>CLAHE</b><br><span class="ok">&#10003; HZF440</span></div></div><div class="cell"><img src="fig_jpg/persp_car_30_pitch30_3.jpg"><div class="cap"><b>enlarge x1.5 + unsharp</b><br><span class="ok">&#10003; HZF440</span></div></div></div>
+<p class="en ">What to do at any view. (1) Photograph the plate from the front whenever you can: at 50 degrees the plate is only 64 % as wide, and most readings fail whatever the filter. (2) Seen from the side (up to about 40 degrees): choose the situation "Angled plate" and press "Use recommended" (enlarge 1.5 + unsharp masking). (3) Seen from above: choose "Seen from above" (local equalisation), then press "Compare with original" and keep the filter only if the reading gets better. (4) Never use blur filters (mean, Gaussian) on an angled plate: the squeezed characters have even thinner strokes. (5) With several cars in the photo use "Pick car..." (tab 4 Plate), so the program straightens the plate of the car you want.</p>
+<h2 class="pg">Many plates at once, at night and by day</h2>
+<p class="en ">Photo with several cars: choose "Many cars in the photo" or "Many cars at night" and press "Use recommended" (this ticks "Find ALL plates" in tab 4), then "Recognise on filtered photo". Every plate the program accepts gets a box in the photo (red: 90 pixels wide or more; orange: smaller, reading unreliable; grey dashed: a plate-like region that could not be read) and, under the photos, a crop with its number and reading. You can also add filters of your own first: the plates are searched in the filtered photo.</p>
+<p><img class="shot" src="fig_jpg/many_night.jpg"></p><p class="sub">Your night traffic photo with the situation "Many cars at night": boxes in the photo, the crops with their readings under it.</p>
+<p class="en small">Measured limits. (1) A plate needs about 100 pixels of width to be read. Plates of 20 to 30 pixels, such as the far cars of your day traffic photo (640 x 480), are neither found nor read, with or without a filter (enlarging 2 and 3 times, gamma and local equalisation were tried): only a photo with more pixels helps. (2) On your night traffic photo (1710 x 855, three plates) 2 are found: the Mini T935AK797 (right with every filter) and the dark SUV 6688 EP-2 (read 6688EP, 6688EP2 with local equalisation or enlarging 3 times, otherwise 6688F or 6688H); the white car (plate about 70 pixels) is missed. (3) On the 16 test photos a region with a plate-SVM score of at least -0.3 contained the plate in 14 of 16 photos, also when they were shrunk to 40 %, with about 1 false region per photo; the grey dashed boxes use this rule.</p>
+<p class="en small">New in the recogniser (tested on the 16 held-out photos, exact plates before -&gt; after: clean 8 -&gt; 8, lit night 7 -&gt; 8, very dark 6 -&gt; 6, shrunk to 40 % 4 -&gt; 4; characters 74.6 -&gt; 74.6 %, 62.3 -&gt; 68.6 %, 61.9 -&gt; 61.9 %, 58.0 -&gt; 59.0 %): (a) a dark photo is also searched in a locally equalised copy, so you do not have to choose a filter for the search; (b) when fewer than 4 characters can be cut out of a plate, characters that touch each other are cut apart at the thin necks between them, with a top-hat that removes the glare of lamps; (c) plate-like regions that could not be read are reported. These additions did no harm and gave one more plate on the lit night photos, but they did not make your dark.jpg readable: its plate (about 75 pixels, red light, lamp glare fused with the characters) is now located ("plate too small") but not read. Honest conclusion: night plates under about 100 pixels with glare are beyond this recogniser; a closer or sharper photo, or training with your own labelled night photos (markPlateBoxes, then train_real_model), is what helps.</p>
+<p class="en small">Automatic enlargement of small plate crops (new, on by default): a plate narrower than 160 pixels is enlarged with bicubic interpolation to about 160 pixels and sharpened with an unsharp mask before its characters are cut out, which is the "Small or far plate" chain applied to the plate only. On the 16 test photos shrunk to 40 % it raised the exact plates from 4 to 7 (characters 59.0 -&gt; 64.1 %); on clean photos nothing changed (8 of 16, 74.6 %); on the night-lit small photos nothing changed either (5 of 16); a target of 220 pixels gave only 5, and bicubic cutting alone cost two clean plates.</p>
+<p class="en small">Your second set of photos (Find ALL, the model the app loads; the true texts were read by eye from the photos). White BMW, Virginia plate M3PLUS1 (72 px wide): read W3PLUS1, 6 of 7 characters right (M3PLU before the automatic enlargement of small plate crops). Indian taxi, yellow plate KA53C6932 (127 px): read KA53C6332, one character wrong (9 -&gt; 3). Scooter, two-line plate KA02K / X9181 (rows 36 px wide): only the upper row is found, and only after enlarging 2 times (read K402X or K402K for KA02K); the lower row is not found. Night street, Tesla with a California plate 1RAM11 (182 px): found only after enlarging 2 times, read 1RAI1; the other two plates (about 60 and 50 px) are not found. Night traffic: T935AK797 right, 6688EP for 6688EP2, the white car missed. Black BMW M4 (Georgia plate, about 35 px wide) and the other cars of that photo: nothing found. False reading: the sign "NO TURN ON RED" is read as TURN. Why plates are missed or misread: the characters of plates under about 100 px have only 6 to 10 pixels of height, and the character SVM was trained on 2.5 thousand characters of mostly car plates from other countries (9/3 and M/W are typical mistakes); more labelled photos of your own (markPlateBoxes, then train_real_model) are the way to improve that.</p>
+<h2>A real night photo of yours: dark.jpg</h2>
+<p class="en ">dark.jpg is a real night photo with a small plate (about 75 pixels wide) lit red by the tail lights. None of the filters makes the program read MH14 TCF 735: without a filter and with local equalisation it finds no plate; with enlarging + sharpening it finds a plate-like region but reads only "4TC5". The plate has too few pixels. The honest advice for this kind of photo is a closer or sharper photo (the plate should be at least 100 pixels wide). The pictures show the red outline of the region the program accepted, if any.</p>
+<div class="figrow" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><img src="fig_jpg/own_dark_1.jpg"><div class="cap"><b>none</b><br><span class="bad">no plate</span></div></div><div class="cell"><img src="fig_jpg/own_dark_2.jpg"><div class="cap"><b>enlarge x2 + unsharp</b><br><span class="mid">reads 4TC5</span></div></div><div class="cell"><img src="fig_jpg/own_dark_3.jpg"><div class="cap"><b>CLAHE</b><br><span class="bad">no plate</span></div></div></div>
+<h2>All 17 filters, tested with their start values</h2>
+<p class="en ">Every filter was run alone, with the start values the panel put into its box at the time of the test, on the 16 clean test photos. Doing nothing reads 8 of 16 plates exactly (74.6 % of the characters). Clean photos have no problem for a filter to cure, so a filter cannot be expected to win here; the table shows which filters do harm when a beginner adds them by accident. No filter raised an error or returned values outside 0 to 1.</p>
+<table class="n"><tr><th>Filter</th><th>Exact plates</th><th>Plates found</th><th>Characters correct</th><th>Verdict</th></tr><tr><td><b>no filter</b></td><td><b>8 / 16</b></td><td>13 / 16</td><td>74.6 %</td><td></td></tr><tr><td>Resize (change the resolution)</td><td>7 / 16</td><td>14 / 16</td><td>67.3 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Convolution with my own kernel</td><td>7 / 16</td><td>13 / 16</td><td>69.0 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Mean (box) filter</td><td>4 / 16</td><td>12 / 16</td><td>60.2 %</td><td><span class="badc">worse</span></td></tr><tr><td>Gaussian filter</td><td>4 / 16</td><td>11 / 16</td><td>56.0 %</td><td><span class="badc">worse</span></td></tr><tr><td>Median filter</td><td>7 / 16</td><td>13 / 16</td><td>69.9 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Bilateral filter (edge-preserving)</td><td>6 / 16</td><td>13 / 16</td><td>67.5 %</td><td><span class="badc">worse</span></td></tr><tr><td>Unsharp masking</td><td>7 / 16</td><td>13 / 16</td><td>67.3 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Laplacian sharpening</td><td>7 / 16</td><td>12 / 16</td><td>63.1 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Deblur (Richardson-Lucy)</td><td>10 / 16</td><td>12 / 16</td><td>72.5 %</td><td><span class="mute">about the same</span></td></tr><tr><td>Gamma correction</td><td>7 / 16</td><td>13 / 16</td><td>68.0 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Brightness / contrast</td><td>9 / 16</td><td>13 / 16</td><td>70.1 %</td><td><span class="mute">about the same</span></td></tr><tr><td>Contrast stretching</td><td>8 / 16</td><td>13 / 16</td><td>75.7 %</td><td><span class="mute">about the same</span></td></tr><tr><td>Histogram equalisation</td><td>8 / 16</td><td>13 / 16</td><td>69.6 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Local histogram equalisation (CLAHE)</td><td>9 / 16</td><td>13 / 16</td><td>70.7 %</td><td><span class="mute">about the same</span></td></tr><tr><td>Illumination correction</td><td>8 / 16</td><td>13 / 16</td><td>69.0 %</td><td><span class="warnc">slightly worse</span></td></tr><tr><td>Frequency low-pass (noise)</td><td>4 / 16</td><td>12 / 16</td><td>58.9 %</td><td><span class="badc">worse</span></td></tr><tr><td>Frequency band-pass</td><td>3 / 16</td><td>11 / 16</td><td>48.8 %</td><td><span class="badc">worse</span></td></tr></table>
+<p class="en small">Verdict: "worse" = at least 2 plates fewer than doing nothing; "slightly worse" = 1 plate fewer or at least 5 points fewer correct characters; everything else "about the same", because with 16 photos a difference of one or two plates is noise (Richardson-Lucy 10, CLAHE 9 and brightness/contrast 9 plates are inside that noise: their characters were not better). Harmful at the old start values: Gaussian 5 x 5 (4 of 16), box filter (4), frequency low-pass 0.3 (4), band-pass 0.03..0.5 (3) and bilateral (6; it is made for grainy photos, not clean ones). After this test the start values were made milder and re-tested the same way: Gaussian 3 x 3, sigma 0.8: 7 of 16 (73.7 % of the characters); low-pass 0.5: 7 of 16 (66.4 %), 0.7: 6 of 16; band-pass 0.01..0.8: 9 of 16 (71.1 %), 0.02..0.9: 6 of 16.</p>
+<h2 class="pg">Reference: what every filter does</h2>
+<div class="filter"><h3>Resize (change the resolution) <span class="mute small">&mdash; Spatial resolution</span></h3>
+<p class="lab">How it works</p><p class="en ">Changes the number of pixels. Enlarging makes new pixels by interpolation: nearest copies the closest pixel (blocky), bilinear averages 4 neighbours (smooth), bicubic uses 16 neighbours (smoothest, sharpest edges). Shrinking first blurs a little and then drops pixels, so it removes some noise and makes everything faster.</p>
+<p class="lab">Good for</p><p class="en ">Small or far plates: enlarge 2 times with bicubic and sharpen slightly. Measured on photos shrunk to 40 %: 4 -&gt; 5 plates of 16 with the enlargement, 6 with enlargement + unsharp masking (+5.2 points of characters).</p>
+<p class="lab">Be careful</p><p class="en ">It cannot create detail that the camera never recorded: a plate only 40 pixels wide stays unreadable. Do NOT shrink big photos to save time: shrinking to 0.5 cost 3 of 16 plates (8 -&gt; 5).</p>
+<p class="small"><span class="lab">Numbers:</span> Scale 0.25 to 4 (start 1.5); Interp. 1 nearest, 2 bilinear, 3 bicubic (start 3)</p></div>
+<div class="filter"><h3>Convolution with my own kernel <span class="mute small">&mdash; Spatial filtering (convolution)</span></h3>
+<p class="lab">How it works</p><p class="en ">A small matrix (the kernel) slides over the photo. Every output pixel is the weighted sum of the neighbours under the kernel. A kernel whose numbers add up to 1 keeps the brightness (blur, sharpen); a kernel that adds up to 0 (Laplacian, Sobel) keeps only changes, i.e. edges. The border pixels need padding (see the Border setting): replicate repeats the edge pixels, symmetric mirrors them, zero fills with black.</p>
+<p class="lab">Good for</p><p class="en ">Learning how filters work; your own mild sharpening, for example [0 -1 0; -1 5 -1; 0 -1 0].</p>
+<p class="lab">Be careful</p><p class="en ">Edge kernels (sum 0) turn the photo almost black: use them only to look at edges, not before recognition.</p>
+<p class="small"><span class="lab">Numbers:</span> no numbers; the matrix is typed under "Own kernel" (odd size, e.g. [0 -1 0; -1 5 -1; 0 -1 0])</p></div>
+<div class="filter"><h3>Mean (box) filter <span class="mute small">&mdash; Linear smoothing filters</span></h3>
+<p class="lab">How it works</p><p class="en ">Replaces every pixel by the plain average of its k x k neighbours. Weak noise is averaged away, but every edge is smeared as well.</p>
+<p class="lab">Good for</p><p class="en ">Hardly anything: very light grain only.</p>
+<p class="lab">Be careful</p><p class="en ">Blurs every edge. Measured: even the smallest window (3 x 3) read only 4 of 16 clean test plates (60.2 % of the characters). The median or bilateral filter is better.</p>
+<p class="small"><span class="lab">Numbers:</span> Window 3 to 15 (start 3)</p></div>
+<div class="filter"><h3>Gaussian filter <span class="mute small">&mdash; Linear smoothing filters</span></h3>
+<p class="lab">How it works</p><p class="en ">A weighted average: the centre pixel counts most, far neighbours little (bell-shaped weights, width sigma). Smoother and less blocky than the box average.</p>
+<p class="lab">Good for</p><p class="en ">Almost nothing in this task: it is only for steps that dislike tiny noise. If you must use it, take the mild start values (3 x 3, sigma 0.8).</p>
+<p class="lab">Be careful</p><p class="en ">Blurs the thin strokes of small characters. Measured on the clean test photos: the old start values (5 x 5, sigma 1) read 4 of 16 plates instead of 8; the new mild ones (3 x 3, sigma 0.8) read 7 of 16. On noisy photos a 5 x 5 Gaussian also cost 3 plates.</p>
+<p class="small"><span class="lab">Numbers:</span> Window 3 to 21 (start 3); Sigma 0.5 to 6 (start 0.8)</p></div>
+<div class="filter"><h3>Median filter <span class="mute small">&mdash; Non-linear filters (noise)</span></h3>
+<p class="lab">How it works</p><p class="en ">Sorts the k x k neighbours by brightness and takes the middle value. One isolated white or black dot can never be the middle value, so it disappears; edges stay fairly sharp.</p>
+<p class="lab">Good for</p><p class="en ">Salt-and-pepper noise: isolated white and black dots (dead sensor pixels, transmission errors, JPEG sparkle). Measured: +2 plates of 16 at 5 % dots.</p>
+<p class="lab">Be careful</p><p class="en ">On ordinary grain it rounds off thin strokes: on Gaussian noise it cost 2 of 16 plates.</p>
+<p class="small"><span class="lab">Numbers:</span> Window 3 to 9 (start 3)</p></div>
+<div class="filter"><h3>Bilateral filter (edge-preserving) <span class="mute small">&mdash; Non-linear filters (noise)</span></h3>
+<p class="lab">How it works</p><p class="en ">Like a Gaussian filter, but a neighbour whose brightness is very different (the other side of an edge) gets almost no weight. Flat areas are smoothed, the edges of the characters stay sharp.</p>
+<p class="lab">Good for</p><p class="en ">Grainy photos of normal brightness (Gaussian noise). Measured: 8 -&gt; 9 plates of 16 at sigma 0.06, while Gaussian 5 x 5 gave 5 and median 6.</p>
+<p class="lab">Be careful</p><p class="en ">On clean photos it costs plates (6 of 16 instead of 8 at the start values): use it only when the photo is really grainy. On simulated night photos it did not help either (lit street 7 -&gt; 6, very dark 6 -&gt; 5; with a fixed sigma_r 4, which is why sigma_r now follows the grey range of the photo). Slow on big photos.</p>
+<p class="small"><span class="lab">Numbers:</span> Spatial sigma 0.5 to 2 (start 1.5); Range sigma 0.05 to 0.4 (start 0.15, relative to the grey range of the photo)</p></div>
+<div class="filter"><h3>Unsharp masking <span class="mute small">&mdash; Sharpening and deblurring</span></h3>
+<p class="lab">How it works</p><p class="en ">Subtracts a blurred copy from the photo and adds the difference back: J = I + amount x (I - Gaussian(I)). Edges get steeper, so the strokes of the characters stand out.</p>
+<p class="lab">Good for</p><p class="en ">Slightly soft photos and small plates after enlarging (amount 1, sigma 1.2).</p>
+<p class="lab">Be careful</p><p class="en ">It also amplifies noise and draws bright and dark halos next to edges. Strong blur is not repaired by it.</p>
+<p class="small"><span class="lab">Numbers:</span> Amount 0 to 4 (start 1.5); Blur sigma 0.5 to 5 (start 1.5)</p></div>
+<div class="filter"><h3>Laplacian sharpening <span class="mute small">&mdash; Sharpening and deblurring</span></h3>
+<p class="lab">How it works</p><p class="en ">Subtracts the Laplacian (second derivative) of the photo. It reacts to every sudden change of brightness, so fine detail and noise are both emphasised.</p>
+<p class="lab">Good for</p><p class="en ">Quick sharpening of a clean, slightly soft photo.</p>
+<p class="lab">Be careful</p><p class="en ">Noisier than unsharp masking: use it only on clean photos.</p>
+<p class="small"><span class="lab">Numbers:</span> Amount 0 to 3 (start 1)</p></div>
+<div class="filter"><h3>Deblur (Richardson-Lucy) <span class="mute small">&mdash; Sharpening and deblurring</span></h3>
+<p class="lab">How it works</p><p class="en ">Richardson-Lucy deconvolution: it assumes the photo is the true picture blurred by a Gaussian of width sigma and searches, step by step (iterations), for the sharp picture that would give exactly this photo when blurred.</p>
+<p class="lab">Good for</p><p class="en ">Out-of-focus blur of about 1 to 2 pixels (sigma 1.5, 10 iterations), in theory. In the tests it was not reliable: on clean photos 10 of 16 plates (but 72.5 % of the characters), on blurred photos 5 of 16, the same as doing nothing.</p>
+<p class="lab">Be careful</p><p class="en ">Not for motion blur. Too many iterations amplify noise and draw ripples next to edges. Measured: no reliable gain on blurred test photos.</p>
+<p class="small"><span class="lab">Numbers:</span> Blur sigma 0.5 to 4 (start 1.5); Iterations 3 to 30 (start 10)</p></div>
+<div class="filter"><h3>Gamma correction <span class="mute small">&mdash; Brightness and contrast</span></h3>
+<p class="lab">How it works</p><p class="en ">J = I to the power gamma. A gamma below 1 brightens the dark parts a lot and the bright parts little; above 1 darkens the photo.</p>
+<p class="lab">Good for</p><p class="en ">To look at dark photos (gamma 0.5 to 0.7) or washed-out photos (1.3 to 1.6). On simulated night photos gamma 0.6 changed the plate count by -1 / 0 and the characters by +4.2 / -1.8 points: no clear gain, because the program repairs the brightness itself.</p>
+<p class="lab">Be careful</p><p class="en ">The program already repairs brightness by itself; a second gamma on top over-corrects (it cost 2 of 16 plates on shaded photos).</p>
+<p class="small"><span class="lab">Numbers:</span> Gamma 0.3 to 3 (start 0.7); below 1 brightens</p></div>
+<div class="filter"><h3>Brightness / contrast <span class="mute small">&mdash; Brightness and contrast</span></h3>
+<p class="lab">How it works</p><p class="en ">J = gain x (I - 0.5) + 0.5 + offset. A gain above 1 pushes dark and bright levels apart (more contrast); the offset moves everything brighter or darker.</p>
+<p class="lab">Good for</p><p class="en ">Slightly flat photos.</p>
+<p class="lab">Be careful</p><p class="en ">Bright areas can burn out to pure white (clipping) and the lost detail is gone for good.</p>
+<p class="small"><span class="lab">Numbers:</span> Contrast 0.3 to 3 (start 1.4); Brightness -0.3 to 0.3 (start 0)</p></div>
+<div class="filter"><h3>Contrast stretching <span class="mute small">&mdash; Brightness and contrast</span></h3>
+<p class="lab">How it works</p><p class="en ">Finds the darkest 1 % and the brightest 1 % of the grey levels and stretches them to full black and full white.</p>
+<p class="lab">Good for</p><p class="en ">Hazy, foggy or rainy photos where everything looks grey. Measured: +1.8 points of character accuracy on photos squeezed to 30 % contrast.</p>
+<p class="lab">Be careful</p><p class="en ">It stretches the noise too, and the program already stretches the contrast by itself when it is very low.</p>
+<p class="small"><span class="lab">Numbers:</span> Low % 0 to 20 (start 1); High % 80 to 100 (start 99)</p></div>
+<div class="filter"><h3>Histogram equalisation <span class="mute small">&mdash; Brightness and contrast</span></h3>
+<p class="lab">How it works</p><p class="en ">Re-maps the grey levels so that all levels are used about equally often (one mapping for the whole photo). A strong contrast boost.</p>
+<p class="lab">Good for</p><p class="en ">Very flat photos, mainly to look at them.</p>
+<p class="lab">Be careful</p><p class="en ">Exaggerates noise. One mapping for everything: a bright lamp next to a dark car gives a poor result (use local equalisation instead).</p>
+<p class="small"><span class="lab">Numbers:</span> no numbers</p></div>
+<div class="filter"><h3>Local histogram equalisation (CLAHE) <span class="mute small">&mdash; Brightness and contrast</span></h3>
+<p class="lab">How it works</p><p class="en ">Contrast-limited adaptive histogram equalisation: the photo is cut into tiles, every tile gets its own equalising mapping (limited by the clip limit so flat areas do not explode), and neighbouring tiles are blended. Dark corners and bright spots both gain contrast.</p>
+<p class="lab">Good for</p><p class="en ">Uneven light where a normal-brightness photo has a dark side and a bright side (typical: 8 tiles, clip limit 3). Measured on the angled plates: 3 of 6 read exactly instead of 1 of 6 (9 instead of 8 of 16 overall, but -3.9 points of characters): a hint, not a proof.</p>
+<p class="lab">Be careful</p><p class="en ">Amplifies noise in dark flat areas: on simulated night photos it cost plates (lit street 7 -&gt; 6, very dark 6 -&gt; 5 and -15 points of characters). Lower the clip limit if you try it on a noisy photo.</p>
+<p class="small"><span class="lab">Numbers:</span> Tiles 2 to 16 (start 8); Clip limit 1 to 10 (start 3)</p></div>
+<div class="filter"><h3>Illumination correction <span class="mute small">&mdash; Uneven illumination</span></h3>
+<p class="lab">How it works</p><p class="en ">Estimates the slowly changing light as a very wide Gaussian blur and divides the photo by it, so a shadow across the photo or the gradient of a lamp disappears while the letters stay.</p>
+<p class="lab">Good for</p><p class="en ">A shadow across the plate or one side of the photo darker than the other. Measured: +2 plates of 16 (but -1.7 points of characters).</p>
+<p class="lab">Be careful</p><p class="en ">A big dark object (the car body) is 'corrected' too, and bright sky above a dark road gets flattened. The program cannot tell a shadow from scene content, so it never suggests this filter by itself.</p>
+<p class="small"><span class="lab">Numbers:</span> Blur sigma 10 to 100 (start 40); Strength 0 to 1 (start 1)</p></div>
+<div class="filter"><h3>Frequency low-pass (noise) <span class="mute small">&mdash; Frequency domain</span></h3>
+<p class="lab">How it works</p><p class="en ">The photo is turned into its frequencies with the Fourier transform; the fast-changing (high-frequency) parts above the cut-off are removed (Butterworth shape), then the photo is transformed back. It is a smoothing filter designed in the frequency domain.</p>
+<p class="lab">Good for</p><p class="en ">Regular fine patterns such as the pixel grid of a screen when a monitor was photographed. Better still: open the original file instead of a photo of the screen. Not measured on real screen photos.</p>
+<p class="lab">Be careful</p><p class="en ">Blurs the characters and draws ripples next to edges (ringing). Measured on clean test photos: cut-off 0.3 read 4 of 16 plates, 0.5 (the start value) 7 of 16, 0.7 6 of 16, against 8 without a filter.</p>
+<p class="small"><span class="lab">Numbers:</span> Cut-off 0.05 to 0.8 (start 0.5)</p></div>
+<div class="filter"><h3>Frequency band-pass <span class="mute small">&mdash; Frequency domain</span></h3>
+<p class="lab">How it works</p><p class="en ">Keeps only a band of frequencies: the slow shading (low frequencies) and the very fine noise (high frequencies) are removed, the letter strokes lie in between and stay.</p>
+<p class="lab">Good for</p><p class="en ">Uneven light and fine noise together, if the cut-offs are wide. With the start values 0.01 and 0.8 it read 9 of 16 clean test plates (71.1 %), about as good as doing nothing.</p>
+<p class="lab">Be careful</p><p class="en ">A high cut-off removes the fine detail of the characters: the old start values (0.03 and 0.5) read only 3 of 16 plates (48.8 %), and 0.02 with 0.9 read 6 of 16. Keep the low cut-off at 0.01 and the high one at 0.8.</p>
+<p class="small"><span class="lab">Numbers:</span> Low cut-off 0.01 to 0.3 (start 0.01); High cut-off 0.2 to 0.9 (start 0.8)</p></div>
+<h2 class="pg">If the plate is not read</h2>
+<h3>I added filters and now nothing is read.</h3>
+<p class="en ">Look at the text under the buttons after "Recognise on filtered photo": it says whether the original photo reads. If it does, the filters made the photo worse: press "Remove filters", or choose a situation and "Use recommended". If the original does not read either, the filters are not the cause: the plate is too small (under about 90 pixels wide), too dark, burnt out or hidden. For a small plate choose "Small or far plate"; if it is small and dark, a closer photo is the only real cure.</p>
+<h3>The picture turned black, grey or flat after filtering.</h3>
+<p class="en ">Edge kernels (the presets Edge (Laplacian) and Sobel have the sum 0) and the frequency band-pass turn the photo into an edge map or a flat grey picture. The app prints "WARNING: the filtered photo is almost completely black, white or flat". Use "Sharpen" as your own kernel, or remove the filter.</p>
+<h3>A plate is boxed with 100 % confidence but the text is wrong.</h3>
+<p class="en ">The percentage is only the agreement of the character SVMs with each other; it says nothing about whether the box is a plate or the reading is right. Plates narrower than about 100 pixels are unreliable (orange box). Compare the reading with other filters and with the original.</p>
+<h3>The red box is on a van, a car body or a sign, not on the plate.</h3>
+<p class="en ">A second SVM (the character-validity SVM) now refuses regions whose pieces look like streaks and not like characters: the message is "characters look like streaks or noise". If a wrong box still appears, use "Pick car..." (tab 4 Plate) to search only inside one car. In the test, 37 of 43 non-plate regions were refused and 13 of the plates kept: it is not perfect.</p>
+<h3>My photo is .jfif, .webp, .avif or .jxl.</h3>
+<p class="en ">.jfif files and JPEGs without an extension open now. MATLAB cannot read .webp, .avif and .jxl: open them in Paint and use File &gt; Save as &gt; JPEG picture, or take a screenshot (Win+Shift+S) and save it as PNG.</p>
+<h2>How this was measured, and what it does not prove</h2>
+<p class="en small">Test photos: the 16 held-out photos of the project (images/real, split = test), never used for training; the numbers come from the models trained without them (lpr_svm_model_real_dev.mat). Exact plate = every character right. Simulated night: darkened photo, orange lamp colour cast, two glows and Gaussian noise 0.03 (simulateNight). Small: the photo shrunk to 40 %. Dots: salt-and-pepper 5 %. Grain: Gaussian noise sigma 0.06. Blur: Gaussian sigma 2. Low contrast: contrast squeezed to 30 %. Shadow: right side 4 times darker. Perspective: the whole photo is turned about the vertical axis (yaw) or the horizontal axis (pitch) with a homography, camera 1.6 photo widths away. These are simulations; real photographs taken at an angle differ (lens distortion, other backgrounds). The example marked "own" is your photo dark.jpg (folder Desktop\car license plate), which was not used to choose any setting. The full tables are in README.md.</p>
+</body></html>

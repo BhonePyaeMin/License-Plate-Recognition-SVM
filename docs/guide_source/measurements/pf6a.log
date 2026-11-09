@@ -1,0 +1,39 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 13, exact 8 (50.0 %), character accuracy 74.6 %, 46.68 s/photo
+  day   (16 photos, photos transformed): exact 8 (50.0 %), character accuracy 74.6 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | none                                     | exact  8/16 | read 13/16 | chars  74.6 % | 46.7 s/photo
+test photos (16): text produced 13, exact 7 (43.8 %), character accuracy 69.0 %, 68.31 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 69.0 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Convolution with my own kernel           | exact  7/16 | read 13/16 | chars  69.0 % | 68.3 s/photo
+test photos (16): text produced 11, exact 4 (25.0 %), character accuracy 56.0 %, 99.33 s/photo
+  day   (16 photos, photos transformed): exact 4 (25.0 %), character accuracy 56.0 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Gaussian filter                          | exact  4/16 | read 11/16 | chars  56.0 % | 99.3 s/photo
+test photos (16): text produced 13, exact 6 (37.5 %), character accuracy 67.5 %, 77.71 s/photo
+  day   (16 photos, photos transformed): exact 6 (37.5 %), character accuracy 67.5 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Bilateral filter (edge-preserving)       | exact  6/16 | read 13/16 | chars  67.5 % | 77.7 s/photo
+test photos (16): text produced 12, exact 7 (43.8 %), character accuracy 63.1 %, 48.18 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 63.1 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Laplacian sharpening                     | exact  7/16 | read 12/16 | chars  63.1 % | 48.2 s/photo
+test photos (16): text produced 13, exact 7 (43.8 %), character accuracy 68.0 %, 21.07 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 68.0 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Gamma correction                         | exact  7/16 | read 13/16 | chars  68.0 % | 21.1 s/photo
+test photos (16): text produced 13, exact 8 (50.0 %), character accuracy 75.7 %, 87.33 s/photo
+  day   (16 photos, photos transformed): exact 8 (50.0 %), character accuracy 75.7 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Contrast stretching                      | exact  8/16 | read 13/16 | chars  75.7 % | 87.3 s/photo
+test photos (16): text produced 13, exact 9 (56.2 %), character accuracy 70.7 %, 16.42 s/photo
+  day   (16 photos, photos transformed): exact 9 (56.2 %), character accuracy 70.7 %, text produced 13
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Local histogram equalisation (CLAHE)     | exact  9/16 | read 13/16 | chars  70.7 % | 16.4 s/photo
+test photos (16): text produced 12, exact 4 (25.0 %), character accuracy 58.9 %, 13.97 s/photo
+  day   (16 photos, photos transformed): exact 4 (25.0 %), character accuracy 58.9 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+F6 | Frequency low-pass (noise)               | exact  4/16 | read 12/16 | chars  58.9 % | 14.0 s/photo
+PF6 DONE

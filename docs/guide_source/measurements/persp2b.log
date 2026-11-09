@@ -1,0 +1,61 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 11, exact 3 (18.8 %), character accuracy 50.6 %, 99.37 s/photo
+  day   (16 photos, photos transformed): exact 3 (18.8 %), character accuracy 50.6 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+PERSP | yaw 50                 | CLAHE 8 tiles, clip 3  | exact  3/16 | read 11/16 | chars  50.6 % | 99.4 s/photo
+
+------------------------------------------------------------------------
+          Access violation detected at Mon Oct 26 16:02:50 2026
+------------------------------------------------------------------------
+Architecture     : win64
+Processor ID     : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+Host Name        : LAPTOP-29UDKLV8
+Locale           : en_US
+
+
+Abnormal termination:
+Access violation
+
+Current Thread: '' id 27940
+
+Register State (from fault):
+  RAX = 0000028eadd0cee0  RBX = 0000000000000000
+  RCX = 0000000000000000  RDX = 0000028eadca6700
+  RSP = 000000ad0f1fecd0  RBP = 0000028eae0bc320
+  RSI = 00000100000001b3  RDI = 0000028eadd0c8b0
+ 
+   R8 = 7ffffffffffffffc   R9 = 0000000000000000
+  R10 = 0000028ea81a0000  R11 = 0000000000000020
+  R12 = 00000000ffffffff  R13 = cbf29ce484222325
+  R14 = 0000028eae0bc358  R15 = 0000028eacde9be0
+ 
+  RIP = 00007ffadaeef6a8  EFL = 00010283
+ 
+   CS = 0033   FS = 0053   GS = 002b
+
+Stack Trace (from fault):
+[  0] 0x00007ffadaeef6a8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00325288 cppmicroservices::ServiceReferenceFromService+00001560
+[  1] 0x00007ffadaee7dc8 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00294344 cppmicroservices::ServiceObjects<void>::GetServiceReference+00001896
+[  2] 0x00007ffadaee64b3 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00287923 cppmicroservices::ServiceObjectsBase::ServiceObjectsBase+00000307
+[  3] 0x00007ffadaee78d7 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\CppMicroServices3.dll+00293079 cppmicroservices::ServiceObjects<void>::GetServiceReference+00000631
+[  4] 0x00007ffad4446b94 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00813972
+[  5] 0x00007ffad4499343 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01151811
+[  6] 0x00007ffad4499521 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+01152289
+[  7] 0x00007ffad4453515 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00865557
+[  8] 0x00007ffad445a267 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00893543
+[  9] 0x00007ffad444084d C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00788557
+[ 10] 0x00007ffad444d7f5 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00841717
+[ 11] 0x00007ffad445778b C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00882571
+[ 12] 0x00007ffad43c3241 C:\Users\66877\AppData\Local\MathWorks\ServiceHost\v2026.11.0.3\bin\win64\spf\framework\agent\spf\framework\libmwagentspfframework.dll+00275009
+[ 13] 0x00007ffb5593cd30                   C:\WINDOWS\System32\ucrtbase.dll+00183600 wcsrchr+00000336
+[ 14] 0x00007ffb5662dda7                   C:\WINDOWS\System32\KERNEL32.DLL+00187815 BaseThreadInitThunk+00000023
+[ 15] 0x00007ffb585dee4c                      C:\WINDOWS\SYSTEM32\ntdll.dll+00519756 RtlUserThreadStart+00000044
+
+
+** This crash report has been written to C:\Users\66877\AppData\Local\MathWorks\ServiceHost\logs\MathWorksServiceHost_crash_31324.log **
+test photos (16): text produced 11, exact 6 (37.5 %), character accuracy 58.4 %, 87.64 s/photo
+  day   (16 photos, photos transformed): exact 6 (37.5 %), character accuracy 58.4 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+PERSP | yaw 50                 | Resize x1.5 + unsharp  | exact  6/16 | read 11/16 | chars  58.4 % | 87.6 s/photo
+PERSP DONE

@@ -1,0 +1,90 @@
+{
+  "model": {
+    "supportVectors": 3587,
+    "trainSeconds": 4.7648921,
+    "unseenFontAccuracy": 0.975925925925926,
+    "trainAccuracy": 0.99911111111111106,
+    "nTrain": 9000
+  },
+  "example": {
+    "truth": "ZWNG044",
+    "read": "ZWNG044",
+    "font": "Trebuchet MS bold"
+  },
+  "eval": [
+    {
+      "N": 100,
+      "hard": 0.2,
+      "fonts": "test",
+      "detectionRate": 0.98,
+      "segmentationRate": 0.96,
+      "charAccuracyNoFormat": 0.965,
+      "charAccuracyWithFormat": 0.97738095238095246,
+      "plateAccuracyNoFormat": 0.79,
+      "plateAccuracyWithFormat": 0.87,
+      "secondsPerImage": 0.357771166
+    },
+    {
+      "N": 100,
+      "hard": 0.5,
+      "fonts": "test",
+      "detectionRate": 0.99,
+      "segmentationRate": 0.93,
+      "charAccuracyNoFormat": 0.94547619047619047,
+      "charAccuracyWithFormat": 0.957857142857143,
+      "plateAccuracyNoFormat": 0.75,
+      "plateAccuracyWithFormat": 0.83,
+      "secondsPerImage": 0.43972075799999993
+    },
+    {
+      "N": 100,
+      "hard": 0.8,
+      "fonts": "test",
+      "detectionRate": 1,
+      "segmentationRate": 0.89,
+      "charAccuracyNoFormat": 0.92119047619047623,
+      "charAccuracyWithFormat": 0.94166666666666676,
+      "plateAccuracyNoFormat": 0.67,
+      "plateAccuracyWithFormat": 0.79,
+      "secondsPerImage": 0.407873489
+    }
+  ],
+  "errors": {
+    "correct": 123,
+    "lookalike": 10,
+    "otherSubstitution": 11,
+    "wrongCount": 5,
+    "wrongRegion": 1,
+    "notFound": 0
+  },
+  "errorsN": 150,
+  "perFont": [
+    {
+      "font": "Calibri bold",
+      "n": 29,
+      "exactNoLayout": 0.96551724137931039
+    },
+    {
+      "font": "Courier New bold",
+      "n": 39,
+      "exactNoLayout": 0.64102564102564108
+    },
+    {
+      "font": "Trebuchet MS bold",
+      "n": 46,
+      "exactNoLayout": 0.95652173913043481
+    },
+    {
+      "font": "Verdana bold",
+      "n": 36,
+      "exactNoLayout": 0.72222222222222221
+    }
+  ],
+  "timing": {
+    "detectMs": 323.17902000000004,
+    "segmentMs": 24.635582666666668,
+    "classifyMs": 14.345823333333335
+  },
+  "generated": "2026-10-24 18:38",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

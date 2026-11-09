@@ -1,0 +1,19 @@
+License Plate Recognition toolbox added to the path:
+  C:\Users\66877\Desktop\License Plate Recognition Using SVM
+test photos (16): text produced 12, exact 4 (25.0 %), character accuracy 59.0 %, 24.49 s/photo
+  day   (16 photos, photos transformed): exact 4 (25.0 %), character accuracy 59.0 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+BOOST | small 40%        | baseline     | exact  4/16 | read 12/16 | chars  59.0 % | 24.5 s/photo
+test photos (16): text produced 11, exact 6 (37.5 %), character accuracy 61.2 %, 21.22 s/photo
+  day   (16 photos, photos transformed): exact 6 (37.5 %), character accuracy 61.2 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+BOOST | small 40%        | bicubic seg  | exact  6/16 | read 11/16 | chars  61.2 % | 21.2 s/photo
+test photos (16): text produced 11, exact 7 (43.8 %), character accuracy 64.1 %, 18.04 s/photo
+  day   (16 photos, photos transformed): exact 7 (43.8 %), character accuracy 64.1 %, text produced 11
+  night: no photos (mark night photos with note = night in labels.csv)
+BOOST | small 40%        | boost 160    | exact  7/16 | read 11/16 | chars  64.1 % | 18.0 s/photo
+test photos (16): text produced 12, exact 5 (31.2 %), character accuracy 63.8 %, 17.71 s/photo
+  day   (16 photos, photos transformed): exact 5 (31.2 %), character accuracy 63.8 %, text produced 12
+  night: no photos (mark night photos with note = night in labels.csv)
+BOOST | small 40%        | boost 220    | exact  5/16 | read 12/16 | chars  63.8 % | 17.7 s/photo
+BOOST DONE

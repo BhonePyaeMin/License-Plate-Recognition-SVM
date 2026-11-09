@@ -1,0 +1,60 @@
+{
+  "interp": {
+    "resizeRoundTrip": {
+      "nearest": 30.350898464417313,
+      "bilinear": 31.730640759548692,
+      "bicubic": 33.349534318534907
+    },
+    "rotateRoundTrip": {
+      "nearest": 38.952757433607886,
+      "bilinear": 38.825813380758767,
+      "bicubic": 45.640207786867606
+    },
+    "enlargeMs": {
+      "nearest": 45.439007100000005,
+      "bilinear": 138.8632071,
+      "bicubic": 1721.6949071000001
+    }
+  },
+  "mapping": {
+    "forwardNearestHolesPct": 60.822630939168121,
+    "forwardBilinearHolesPct": 0,
+    "reverseHolesPct": 0
+  },
+  "radial": {
+    "barrel": {
+      "k1": -0.15,
+      "psnrDistorted": 8.76521765513356,
+      "psnrCorrected": 21.677390920585864
+    },
+    "pincushion": {
+      "k1": 0.3,
+      "psnrDistorted": 8.0981287018131116,
+      "psnrCorrected": 22.554325372756487
+    },
+    "sceneRoundTripPsnr": 38.479025303155673
+  },
+  "reg": {
+    "featuresSeconds": 0.7239678,
+    "features": {
+      "matches": 35,
+      "inliers": 32,
+      "rotationErrorDeg": 0.0403632611826224,
+      "meanPointErrorPx": 0.53823228158111847,
+      "psnrBefore": 14.045818695039694,
+      "psnrAfter": 35.518995971273959
+    },
+    "phase": {
+      "shiftFound": [
+        -9,
+        5
+      ],
+      "shiftExpected": [
+        -9,
+        5
+      ]
+    }
+  },
+  "generated": "2026-10-24 19:02",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

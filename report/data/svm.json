@@ -1,0 +1,179 @@
+{
+  "toy": {
+    "linear": {
+      "accuracy": 0.6,
+      "supportVectors": 186
+    },
+    "rbf": {
+      "accuracy": 0.99,
+      "supportVectors": 22
+    }
+  },
+  "data": {
+    "trainSamples": 9000,
+    "unseenFontSamples": 1440,
+    "seenFontSamples": 720,
+    "features": 324,
+    "classes": 36,
+    "trainFonts": 17,
+    "testFonts": 4
+  },
+  "curve": {
+    "n": [
+      10,
+      25,
+      50,
+      100,
+      250
+    ],
+    "unseen": [
+      0.92013888888888884,
+      0.9555555555555556,
+      0.96527777777777779,
+      0.96666666666666667,
+      0.97222222222222221
+    ],
+    "seen": [
+      0.91666666666666663,
+      0.9555555555555556,
+      0.98333333333333328,
+      0.9819444444444444,
+      0.98611111111111116
+    ],
+    "trainSeconds": [
+      0.810002,
+      1.3780525,
+      1.7414575,
+      2.5134507,
+      7.9412566
+    ],
+    "supportVectors": [
+      353,
+      781,
+      1299,
+      2017,
+      3587
+    ]
+  },
+  "kernel": {
+    "linear": {
+      "unseenAccuracy": 0.96736111111111112,
+      "seenAccuracy": 0.97777777777777775,
+      "trainSeconds": 6.6531713,
+      "supportVectors": 2749
+    },
+    "rbf": {
+      "unseenAccuracy": 0.97222222222222221,
+      "seenAccuracy": 0.98611111111111116,
+      "trainSeconds": 8.557324,
+      "supportVectors": 3587
+    },
+    "poly": {
+      "unseenAccuracy": 0.97152777777777777,
+      "seenAccuracy": 0.97916666666666663,
+      "trainSeconds": 10.7473214,
+      "supportVectors": 3129
+    }
+  },
+  "model": {
+    "features": 324,
+    "binaryMachines": 630,
+    "sharedSupportVectors": 3587,
+    "gamma": 0.18522555729184811
+  },
+  "grid": {
+    "C": [
+      1,
+      10,
+      100
+    ],
+    "gammaFactor": [
+      0.5,
+      1,
+      2
+    ],
+    "gammaScale": 0.18522555729184811,
+    "accuracy": [
+      [
+        0.96944444444444444,
+        0.97222222222222221,
+        0.97361111111111109
+      ],
+      [
+        0.97361111111111109,
+        0.97222222222222221,
+        0.97638888888888886
+      ],
+      [
+        0.97291666666666665,
+        0.97222222222222221,
+        0.97569444444444442
+      ]
+    ]
+  },
+  "topConfusions": [
+    {
+      "truth": "E",
+      "read": "B",
+      "count": 6,
+      "of": 40
+    },
+    {
+      "truth": "F",
+      "read": "E",
+      "count": 6,
+      "of": 40
+    },
+    {
+      "truth": "0",
+      "read": "O",
+      "count": 5,
+      "of": 40
+    },
+    {
+      "truth": "T",
+      "read": "W",
+      "count": 4,
+      "of": 40
+    },
+    {
+      "truth": "P",
+      "read": "E",
+      "count": 3,
+      "of": 40
+    },
+    {
+      "truth": "L",
+      "read": "E",
+      "count": 2,
+      "of": 40
+    },
+    {
+      "truth": "T",
+      "read": "H",
+      "count": 2,
+      "of": 40
+    },
+    {
+      "truth": "K",
+      "read": "R",
+      "count": 2,
+      "of": 40
+    },
+    {
+      "truth": "I",
+      "read": "1",
+      "count": 1,
+      "of": 40
+    },
+    {
+      "truth": "4",
+      "read": "A",
+      "count": 1,
+      "of": 40
+    }
+  ],
+  "confusionOverallAccuracy": 0.97222222222222221,
+  "generated": "2026-10-24 18:57",
+  "matlab": "26.1.0.3312084 (R2026a) Update 4"
+}

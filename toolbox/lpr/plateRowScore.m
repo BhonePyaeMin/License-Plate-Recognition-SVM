@@ -4,7 +4,7 @@ function v = plateRowScore(boxes)
 %   was resized to a height of 100 pixels (as SEGMENTCHARS returns them).
 %   The score is the product of five factors: a plausible number of characters (3..12, best
 %   7), similar heights, characters that fill about 55 % of the plate height, regular spacing
-%   (the widest gap, a space in the text, is ignored) and centres on one line.
+%   (the widest gap, a space in the text, is ignored; the three widest from 10 characters on) and centres on one line.
 
 n = size(boxes, 1);
 if n < 3 || n > 12, v = 0; return; end
@@ -13,7 +13,7 @@ nScore  = min(n, 7) / 7;
 hReg    = exp(-8 * (std(h) / mean(h))^2);
 fill    = exp(-((mean(h) / 100 - 0.55) / 0.25)^2);
 gaps = max(x(2:end) - (x(1:end-1) + w(1:end-1)), 0);
-if n >= 4, gaps = sort(gaps);  gaps = gaps(1:end-1); end
+if n >= 4, gaps = sort(gaps);  gaps = gaps(1:end - 1 - 2 * (n >= 10)); end     % the widest gaps are spaces of the text: 1, and 3 from 10 characters on (MH 20 EE 0943)     % the widest gaps are spaces of the text: 1 (4 to 7 characters), 2 (8 to 9), 3 (10 or more: MH 20 EE 0943)
 spacing = exp(-1.5 * (std(gaps) / (mean(gaps) + 2))^2);
 line    = exp(-8 * (std(y + h/2) / mean(h))^2);
 v = nScore * hReg * fill * spacing * line;

@@ -395,65 +395,46 @@ if exist(finalModel, 'file')
     end
 end
 
-% -------------------- situations of the filter panel (English advice) --------------------
-Ad = situationAdvice();
+% -------------------- filter panel and plate tab of the GUI --------------------
 pfNames = {prefilterOps().name};
-okChain = true;
-for q = 1:numel(Ad)
-    ch = Ad(q).chain;
-    for w = 1:numel(ch)
-        ix = find(strcmp(pfNames, ch(w).name), 1);
-        okChain = okChain && ~isempty(ix);
-        if ~isempty(ix)
-            pr = pfs(ix).params;
-            okChain = okChain && numel(ch(w).p) == numel(pr) && ...
-                      all(arrayfun(@(t) ch(w).p(t) >= pr(t).min && ch(w).p(t) <= pr(t).max, 1:numel(pr)));
-        end
-    end
-end
-check('situation advice: every recommended chain uses known filters with parameters inside their limits (and runs)', okChain && numel(Ad) >= 12 && ...
-      ~isempty(applyPrefilters(rand(30, 40, 3), Ad(2).chain)));
-allText = strjoin(cellfun(@(id) strjoin(situationAdvice(id), ' '), {Ad.id}, 'UniformOutput', false), ' ');
 helpText = strjoin({pfs.help}, ' ');
-check('situation advice and filter help are English only (no characters beyond ASCII), every filter has a help text and short labels', ...
-      all(double(allText) < 128) && all(double(helpText) < 128) && all(cellfun(@(t) numel(t) > 40, {pfs.help})) && ...
+check('filter help is English only (no characters beyond ASCII), every filter has a help text and short labels', ...
+      all(double(helpText) < 128) && all(cellfun(@(t) numel(t) > 40, {pfs.help})) && ...
       all(arrayfun(@(o) all(arrayfun(@(q) numel(q.label) <= 16 && ~isempty(q.tip), o.params)), pfs)));
-check('situation advice: the situations asked for exist (night, small, big, angled); night and big recommend no filter, small and angled resize + unsharp masking', ...
-      all(ismember({'night', 'small', 'big', 'angled'}, {Ad.id})) && all(arrayfun(@(a) isempty(a.chain), Ad(ismember({Ad.id}, {'night', 'big'})))) && ...
-      numel(Ad(strcmp({Ad.id}, 'small')).chain) == 2 && numel(Ad(strcmp({Ad.id}, 'angled')).chain) == 2);
 appG = LPR_Toolbox('Visible', 'off');
 appG.loadImage(rand(60, 90, 3), 'chooser test');
 ddG = findall(appG.fig, 'Type', 'uidropdown');
-sitG = ddG(arrayfun(@(d) any(contains(string(d.Items), 'Small or far plate')), ddG));
 btnG = findall(appG.fig, 'Type', 'uibutton');
-useG = btnG(arrayfun(@(b) strcmp(b.Text, 'Use recommended'), btnG));
-sitG.Value = 2;  useG.ButtonPushedFcn(useG, []);
+cbG = findall(appG.fig, 'Type', 'uicheckbox');
+check('GUI: the situation chooser and "Use recommended" are gone; no "Filter guide" button, no Myanmar text; "Enlarge text" is there', ...
+      ~any(arrayfun(@(d) any(contains(string(d.Items), 'Small or far plate')), ddG)) && ~any(arrayfun(@(b) strcmp(b.Text, 'Use recommended'), btnG)) && ...
+      ~any(arrayfun(@(b) contains(b.Text, 'guide', 'IgnoreCase', true), btnG)) && any(arrayfun(@(b) strcmp(b.Text, 'Enlarge text'), btnG)));
+check('GUI plate tab: "Find ALL plates" and "Car by car" are ticked by default, "Night vision" is there (not ticked), and a "Show plate" list', ...
+      any(arrayfun(@(c) startsWith(c.Text, 'Find ALL') && c.Value, cbG)) && any(arrayfun(@(c) startsWith(c.Text, 'Car by car') && c.Value, cbG)) && ...
+      any(arrayfun(@(c) startsWith(c.Text, 'Night vision') && ~c.Value, cbG)) && any(arrayfun(@(d) any(strcmp(d.Items, '-')), ddG)));
+cbAll = cbG(arrayfun(@(c) startsWith(c.Text, 'Find ALL'), cbG));
+appG.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate');
 appG.previewFilters();
 stG = appG.state();
-check('GUI situation chooser: "small plate" puts resize + unsharp masking into the filter boxes (the preview doubles the size)', ...
-      isequal(size(stG.filtered), [120 180 3]));
-check('GUI: no "Filter guide" button and no Myanmar text in the window; "Enlarge text" is there', ...
-      ~any(arrayfun(@(b) contains(b.Text, 'guide', 'IgnoreCase', true), btnG)) && any(arrayfun(@(b) strcmp(b.Text, 'Enlarge text'), btnG)));
+check('GUI: a median filter put into Filter 1 gives a preview of the same size that is not the original', ...
+      isequal(size(stG.filtered), size(stG.orig)) && max(abs(stG.filtered(:) - stG.orig(:))) > 1e-6);
+appG.suggestFilters();
 scrT = get(0, 'ScreenSize');
 bigG = appG.enlargeText();
 taBig = findall(bigG, 'Type', 'uitextarea');
 check('GUI: "Enlarge text" opens a big window with the text of the panel in a large font', ...
-      ~isempty(taBig) && taBig.FontSize >= 16 && numel(taBig.Value) >= 3 && bigG.Position(3) > 0.5 * scrT(3));
+      ~isempty(taBig) && taBig.FontSize >= 16 && numel(taBig.Value) >= 2 && bigG.Position(3) > 0.5 * scrT(3));
 close(bigG);
 appG.loadImage(rand(60, 90, 3), 'chooser test 2');
-sitG.Value = 2;  sitG.ValueChangedFcn(sitG, []);                          % choosing the situation (not pressing "Use recommended") sets its filters
+appG.setFilters(struct('name', 'Resize (change the resolution)', 'p', [2 3]), 'replicate');
 appG.recognize();                                                         % "Recognise plate" then reads the filtered photo
 stG = appG.state();
-check('GUI: choosing a situation sets its filters and "Recognise plate" reads the filtered photo (the photo is enlarged 2 times); a new photo clears the filters', ...
-      isequal(size(stG.I), [120 180 3]) && isequal(size(stG.orig), [60 90 3]));
+check('GUI: "Recognise plate" reads the filtered photo (here enlarged 2 times)', isequal(size(stG.I), [120 180 3]) && isequal(size(stG.orig), [60 90 3]));
 appG.loadImage(rand(60, 90, 3), 'chooser test 3');
 appG.recognize();
 stG = appG.state();
 check('GUI: after loading a new photo "Recognise plate" works on the original size (no filter is left over)', isequal(size(stG.I), [60 90 3]));
-appG.useRecommended('night');
-appG.previewFilters();
-stG = appG.state();
-check('GUI situation chooser: "night" recommends no filter (the preview is the original photo)', isequal(size(stG.filtered), size(stG.orig)) && max(abs(stG.filtered(:) - stG.orig(:))) < 1e-12);
+cbAll.Value = false;                                                       % one plate at a time
 appG.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate');
 appG.recognizeFiltered();
 stG = appG.state();
@@ -467,19 +448,32 @@ appG.openFile(jf);
 stG = appG.state();
 check('GUI: a .jfif file (a JPEG with an unusual extension, as saved by some browsers) can be opened', isequal(size(stG.orig), [40 50 3]));
 delete(jf);  delete(tmpJ);
-cbAll = findall(appG.fig, 'Type', 'uicheckbox');
-cbAll = cbAll(arrayfun(@(c) startsWith(c.Text, 'Find ALL'), cbAll));
-appG.useRecommended('many');
-okMany = cbAll.Value;
-appG.useRecommended('night_many');
-okMany = okMany && cbAll.Value;
-appG.useRecommended('vehicles');
-okMany = okMany && cbAll.Value;
-appG.useRecommended('night_small');
-okSmallN = ~cbAll.Value;
-check('GUI situations "Many cars", "Many cars at night" and "Any vehicle" tick "Find ALL plates", "Night, small or far plate" unticks it and fills 2 filters', ...
-      okMany && okSmallN && ~isempty(findall(appG.fig, 'Type', 'uicheckbox', 'Text', 'Filter 2')) && ismember('Filter 1', arrayfun(@(c) string(c.Text), findall(appG.fig, 'Type', 'uicheckbox'))));
+if exist(finalModel, 'file') && exist('plV', 'var')                     % Find ALL on a scene with one rendered plate: number above the plate, Result and SVM characters shown
+    sceneG = 0.45 * ones(300, 420, 3) + 0.02 * rand(300, 420, 3);
+    pg0 = imResize(plV, 150 / size(plV, 2), 'bilinear');
+    if size(pg0, 3) == 1, pg0 = repmat(pg0, [1 1 3]); end
+    sceneG(120:119 + size(pg0, 1), 130:129 + size(pg0, 2), :) = pg0;
+    appG.loadImage(min(max(sceneG, 0), 1), 'scene with one plate');
+    cbAll.Value = true;
+    appG.recognizeAll();
+    stG = appG.state();
+    txtG = findall(appG.fig, 'Type', 'text');
+    imgG = findall(appG.fig, 'Type', 'image');
+    check('GUI Find ALL: the plate is read, its number is written above its box, "Result" and the gallery with the SVM characters are filled (not blank)', ...
+          ~isempty(stG.plates) && ~isempty(stG.plates(1).chars) && ~isempty(stG.plates(1).segPlate) && ...
+          any(arrayfun(@(t) contains(string(t.String), stG.plates(1).text), txtG)) && numel(imgG) >= 3);
+    appG.showPlate(1);
+end
 close(appG.fig);
+
+% ------------- consensus vote over filtered copies -------------
+if exist(finalModel, 'file') && exist('plV', 'var')
+    F5 = load(finalModel);
+    txtC = consensusText(plV, [1 1 size(plV, 2) size(plV, 1)], 'ABC1234', F5.model);
+    okOpt = true;
+    try, recognizePlates(repmat(0.5, 60, 90, 3), F5.model, 'Consensus', true); catch, okOpt = false; end
+    check('consensusText: a clean rendered plate keeps its reading (ABC1234); recognizePlates accepts the option "Consensus" (off by default)', strcmp(txtC, 'ABC1234') && okOpt);
+end
 
 % ------------- touching characters, lamp glare, plate-like regions that could not be read -------------
 Gt = 0.1 * ones(100, 300);                                           % three bright blocks 40 x 60, 6 px apart, joined by thin necks
@@ -488,6 +482,15 @@ Gt(48:52, 61:66) = 0.9;  Gt(48:52, 107:112) = 0.9;
 nNoSplit = numel(segmentChars(Gt, 'Polarity', 'bright'));
 nSplit = numel(segmentChars(Gt, 'Polarity', 'bright', 'Split', true));
 check('segmentChars: three touching characters are one wide blob without splitting and three characters with "Split"', nNoSplit < 3 && nSplit == 3);
+Gm = 0.1 * ones(100, 260);                                           % six bright blocks, one of them 40 px wide (two characters that touch, joined by a thin neck)
+for q = [20 50 130 160 190], Gm(21:80, q + (0:17)) = 0.9; end
+Gm(21:80, 80:119) = 0.9;  Gm(21:44, 98:101) = 0.1;  Gm(57:80, 98:101) = 0.1;
+check('segmentChars: option FixMerged cuts a block that is twice as wide as the others, with a deep valley, in two (7 instead of 6 characters), the default does not', ...
+      numel(segmentChars(Gm, 'Polarity', 'bright')) == 6 && numel(segmentChars(Gm, 'Polarity', 'bright', 'FixMerged', true)) == 7);
+Gnv = 0.04 * ones(120, 200, 3);  Gnv(60:90, 50:150, :) = 0.12;                % a dark photo: the night-vision copy is brighter, has the same size and stays in [0, 1]
+Jnv = nightVision(Gnv + 0.01 * rand(size(Gnv)));
+check('nightVision: same size, values in [0, 1], and a very dark photo becomes clearly brighter', ...
+      isequal(size(Jnv), size(Gnv)) && min(Jnv(:)) >= 0 && max(Jnv(:)) <= 1 && mean(Jnv(:)) > 2 * mean(Gnv(:)));
 check('segmentPlateBest: "Split" is a fallback (a normal plate gives the same characters with and without it)', ...
       exist(finalModel, 'file') == 0 || isequal(numel(nthOut(1, @segmentPlateBest, plV, 'Split', true)), numel(nthOut(1, @segmentPlateBest, plV, 'Split', false))));
 if exist(finalModel, 'file')
@@ -495,6 +498,13 @@ if exist(finalModel, 'file')
     [oU, uU] = recognizePlates(repmat(0.5 + 0.1 * rand(120, 200), [1 1 3]), F4.model);
     check('recognizePlates returns the plate-like regions that could not be read as a second output (struct array with box, score, width)', ...
           isstruct(uU) && all(ismember({'box', 'score', 'width'}, fieldnames(uU))) && isstruct(oU));
+    scC = 0.45 * ones(300, 420, 3) + 0.02 * rand(300, 420, 3);              % one rendered plate on a plain scene: "Cars" cuts a car out around it
+    pgC = imResize(plV, 150 / size(plV, 2), 'bilinear');  if size(pgC, 3) == 1, pgC = repmat(pgC, [1 1 3]); end
+    scC(120:119 + size(pgC, 1), 130:129 + size(pgC, 2), :) = pgC;
+    [oC, ~, cC] = recognizePlates(min(max(scC, 0), 1), F4.model, 'Cars', true);
+    check('recognizePlates option "Cars": a third output lists the car regions (box, plate, source), the car of a plate that was read points to it, plates carry the characters the SVM saw', ...
+          isstruct(cC) && all(ismember({'box', 'plate', 'source'}, fieldnames(cC))) && ~isempty(oC) && ~isempty(cC) && cC(1).plate == 1 && ...
+          all(ismember({'chars', 'charBoxes', 'segPlate'}, fieldnames(oC))) && ~isempty(oC(1).chars));
     check('the character SVM of the final model uses signed HOG features (model.hog) and the older models still work without that field', ...
           isfield(F4.model, 'hog') && F4.model.hog.signed && size(F4.model.svm.SV, 2) == 648 && ~isfield(load(fullfile('models', 'lpr_svm_model.mat'), 'model').model, 'hog'));
     plS = imResize(plV, 90 / size(plV, 2), 'bilinear');                  % a plate only 90 px wide

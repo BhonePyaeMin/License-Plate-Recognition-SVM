@@ -46,10 +46,17 @@ function res = recognizePlate(img, model, varargin)
 %                        glare of the global repair
 %            'SmallBoost' 160 (default) | width in pixels (0 = off): a plate crop narrower than this is enlarged with bicubic
 %                        interpolation to about this width and sharpened (unsharp masking) before its characters are cut out; the
-%                        crop-level version of the filter chain "Resize x2 + Unsharp masking" of the situation "Small or far plate".
+%                        crop-level version of the filter chain "Resize x2 + Unsharp masking" (the situation chooser of the GUI was removed in round 13).
 %                        Measured on the held-out photos (dev models): shrunk to 40 %: 4 -> 7 plates of 16 (characters 59.0 -> 64.1 %),
 %                        clean photos unchanged (8 of 16, 74.6 %), 220 px instead of 160 gave 5; bicubic segmentation alone cost 2 clean plates
-%            'Split'     true (default): the segmentation may cut touching characters apart (small bold night plates)
+%            'Consensus' false (default) | true: the plate that was found (not with 'Plate' or 'Format') is read again in 3 filtered copies (contrast stretching, CLAHE,
+%                        Richardson-Lucy) and the characters vote with the unfiltered reading, see CONSENSUSTEXT (106 held-out photos: exact plates 56 -> 60; on 10 plates of your own photos 3 -> 2, one plate lost its last character, so it is off by default; about 1.4 times slower); res.singleText is the reading without the vote when it differs
+%            'Split'     true (default): the segmentation may cut touching characters apart (small bold night plates). Since round 13 a reading that failed
+%                        or has 5 characters or fewer is also tried with these cutting variants (RETRYSPLIT inside), and a character of the chosen row that is 1.6 times as
+%                        wide as the others is always cut in two (SEGMENTCHARS 'FixMerged'): FHM 5505 was read HM5505, now FMM5505; held-out photos 56 -> 58 of 106 exact
+%            'Retry'     'full' (default) | 'light' | 'off': the second try with the cutting variants of 'Split' (light: without the slow top-hat variants; it was not faster in RECOGNIZEPLATES, which uses 'full')
+%            'NightVision' false (default) | true: a night-vision copy of the photo (NIGHTVISION) is searched too. Measured: no gain (16 simulated dark photos 6 -> 6 exact),
+%                        so it is off by default
 %            'CharCheck' true (default): if the model has a character-validity SVM (model.charValid) the cut-out
 %                        components must look like characters, otherwise found = false and res.reason says
 %                        'characters look like streaks or noise' (a van, a wall, a grille)
@@ -83,6 +90,9 @@ p.addParameter('CharCheck', true);
 p.addParameter('Split', true);
 p.addParameter('NightSearch', true);
 p.addParameter('SmallBoost', 160);
+p.addParameter('Consensus', false);
+p.addParameter('NightVision', false);
+p.addParameter('Retry', 'full');
 p.parse(varargin{:});
 o = p.Results;
 
@@ -93,6 +103,7 @@ end
 
 res = emptyResult();
 img = toDouble(img);
+img00 = img;                                               % the photo as given (the consensus filters work on it)
 
 if isempty(o.Plate)
     img0 = [];                                             % the photo before the exposure repair (searched too)
@@ -122,9 +133,10 @@ if isempty(o.Plate)
     end
     dopt = [dopt, {'Split', o.Split}];
     if ~isempty(img0), dopt = [dopt, {'Original', img0}]; end
-    if ~isempty(img0) && o.NightSearch                       % dark photo: the plate may show up only after local equalisation
-        dopt = [dopt, {'Extra', {localHistEqualize(img0, 8, 3)}}];
-    end
+    ex = {};
+    if ~isempty(img0) && o.NightSearch, ex{end+1} = localHistEqualize(img0, 8, 3); end      % dark photo: the plate may show up only after local equalisation
+    if o.NightVision, ex{end+1} = nightVision(img00); end                                    % night-vision copy (NIGHTVISION)
+    if ~isempty(ex), dopt = [dopt, {'Extra', ex}]; end
     if o.CharCheck && isfield(model, 'charValid') && ~isempty(model.charValid) && ~any(strcmpi(dopt(1:2:end), 'CharModel'))
         dopt = [dopt, {'CharModel', model.charValid}];
     end
@@ -170,6 +182,41 @@ res.chars = chars;  res.boxes = boxes;
 if isempty(chars), res.reason = 'no characters';  return; end
 
 res = classify(res, model, o);
+if o.Split && ~strcmpi(o.Retry, 'off') && (~res.found || numel(res.chars) <= 5)           % too few or invalid characters: touching characters of a blurred or bold plate?
+    res = retrySplit(res, plate, model, o);
+end
+if o.Consensus && isempty(o.Plate) && res.found && isempty(strrep(o.Format, ' ', ''))
+    t = consensusText(img00, res.bbox, res.text, model);                  % the plate is read in 3 filtered copies and the characters vote
+    if ~strcmp(t, res.text)
+        res.singleText = res.text;  res.text = t;  res.conf = repmat(mean(res.conf), 1, numel(t));
+    end
+end
+end
+
+function res = retrySplit(res, plate, model, o)
+% The normal cutting gave an unreadable row or only 4 or 5 characters. Blurred, bold or small plates (night, far) have characters that
+% touch ("20" and "EE" of MH 20 EE 0943 were two blobs), so the cutting variants that split touching characters are tried (PLATESEGVARIANTS
+% 'split'). A variant is taken when its characters are valid and it has at least 2 characters more than a reading that was found
+% (any valid reading of 5 to 10 characters when nothing was found), and its mean vote confidence is not much lower.
+n0 = numel(res.chars);  c0 = 0;  if res.found, c0 = mean(res.conf); end
+VS = plateSegVariants('split');
+if strcmpi(o.Retry, 'light'), VS = VS(1:3); end                % light: no top-hat variants
+best = [];  bestKey = -1;
+for v = 1:numel(VS)
+    try
+        [ch, bx, dg] = segmentChars(plate, 'Polarity', o.Polarity, 'FixMerged', true, VS{v}{:}, o.SegOptions{:});
+    catch
+        continue
+    end
+    n = numel(ch);
+    if n < max(5, o.MinChars) || n > 10 || (res.found && n < n0 + 2), continue; end
+    r = res;  r.chars = ch;  r.boxes = bx;  r.segDebug = dg;  r.reason = '';  r.found = false;  r.text = '';
+    r = classify(r, model, o);
+    if ~r.found || (res.found && mean(r.conf) < c0 - 0.1), continue; end
+    key = n + mean(r.conf);
+    if key > bestKey, bestKey = key;  best = r; end
+end
+if ~isempty(best), res = best; end
 end
 
 function res = classify(res, model, o)
@@ -181,7 +228,7 @@ if numel(chars) < o.MinChars
     res.reason = sprintf('only %d characters', numel(chars));  return
 end
 if o.CharCheck && isfield(model, 'charValid') && ~isempty(model.charValid)
-    [okC, res.charValidity] = charsLookValid(model.charValid, chars);
+    [okC, res.charValidity] = charsLookValid(model.charValid, chars, res.boxes);      % (the rule is explained in CHARSLOOKVALID)
     if ~okC
         res.reason = 'characters look like streaks or noise';  return
     end
@@ -211,7 +258,11 @@ end
 if mean(conf) < o.MinConf
     res.reason = 'low confidence';  res.conf = conf;  return
 end
-res.text = model.charset(pred(:).');
+txt = model.charset(pred(:).');
+if isempty(fmt) && numel(txt) >= 5 && mean(ismember(txt, 'I1')) >= 0.5      % a row of thin bars read as I and 1 (grille, stripes): no plate
+    res.reason = 'characters look like streaks or noise';  res.conf = conf;  return
+end
+res.text = txt;
 res.conf = conf;
 res.found = true;
 end
@@ -245,7 +296,7 @@ end
 function res = emptyResult()
 res = struct('found', false, 'text', '', 'bbox', [], 'plate', [], 'chars', {{}}, ...
              'conf', [], 'boxes', [], 'detectDebug', [], 'segDebug', [], 'guess', [], 'reason', '', ...
-             'rectified', false, 'rect', [], 'rectInfo', [], 'charValidity', []);
+             'rectified', false, 'rect', [], 'rectInfo', [], 'charValidity', [], 'singleText', '');
 end
 
 function [chars, boxes, res] = tryRectified(plate, chars, boxes, res, o)

@@ -8,15 +8,15 @@ function app = LPR_Toolbox(varargin)
 %     2 Segmentation  edges, thresholding, region growing, colour, morphology
 %     3 Geometry      translate / scale / rotate / affine, interpolation,
 %                     radial distortion, image registration
-%     4 Plate (SVM)   detect the plate, cut the characters, read them with an SVM
+%     4 Plate (SVM)   detect the plate, cut the characters, read them with an SVM. "Find ALL plates" reads every plate of a road
+%                     scene, "Car by car" cuts every car out and reads it too, "Night vision" searches a brightened copy of a dark photo;
+%                     the number of every plate is written above its box, above its picture and above the characters the SVM saw.
 %   The original and the result are shown side by side. "Use result as input"
 %   chains operations (e.g. equalise, then Canny).
 %   The panel on the right ("Pre-filters") filters the ORIGINAL photo with up to four filters
 %   (resolution, convolution, mean / Gaussian / median / bilateral, sharpening, deblurring,
 %   brightness and contrast, local histogram equalisation, illumination, frequency domain),
-%   with a choice of border padding. A drop-down "Situation" (night, small plate, big plate, angled, noisy, ...)
-%   with "Use recommended" fills the boxes with the tested filters for that situation (SITUATIONADVICE);
-%   "Enlarge text" shows the explanation in a big window. "Suggest filters" measures the photo and proposes a chain,
+%   with a choice of border padding. "Enlarge text" shows the explanation in a big window. "Suggest filters" measures the photo and proposes a chain,
 %   "Recognise on filtered photo" searches the plate in the filtered picture, "Compare" reads
 %   the original and the filtered photo and shows both results.
 %
@@ -34,6 +34,7 @@ ops = toolboxOperations();
 S.orig = [];  S.I = [];  S.ref = [];  S.result = [];
 S.model = [];  S.tpl = [];  S.truth = '';  S.lastRes = [];  S.realIdx = 0;  S.roi = [];
 S.filtered = [];  S.filterNote = {};  S.useFilters = true;
+S.plates = [];  S.unread = [];  S.cars = [];
 fops = prefilterOps();
 
 % ------------------------------- layout ------------------------------------
@@ -97,26 +98,18 @@ app.previewFilters = @onPreviewFilters;
 app.recognizeFiltered = @onRecognizeFiltered;
 app.compareFilters = @onCompareFilters;
 app.clearFilters = @onClearFilters;
-app.useRecommended = @useRecommendedScripted;
+app.showPlate  = @showPlateDetail;
 app.openFile = @openFileScripted;
 app.enlargeText = @onEnlarge;
 app.operations = ops;
 
 % ============================== construction ================================
     function h = buildFilterPanel(parent)
-        g = uigridlayout(parent, [13 1]);
-        g.RowHeight = {48, 26, 28, 26, 54, 54, 54, 54, 54, 28, 30, 28, '1x'};
+        g = uigridlayout(parent, [12 1]);
+        g.RowHeight = {48, 28, 26, 54, 54, 54, 54, 54, 28, 30, 28, '1x'};
         g.Padding = [6 6 6 6];  g.RowSpacing = 4;  g.Scrollable = 'on';
-        uilabel(g, 'Text', 'Choose the situation of your photo: its filters are set and "Recognise plate" uses them. Or pick up to four filters yourself (they run in this order on the ORIGINAL photo).', 'WordWrap', 'on');
-        adv = situationAdvice();
-        sitNames = arrayfun(@(q) regexprep(q.title, ' \(.*$', ''), adv, 'UniformOutput', false);
-        h.sit = uidropdown(g, 'Items', sitNames, 'ItemsData', num2cell(1:numel(sitNames)), 'Value', 1, ...
-                           'ValueChangedFcn', @(~, ~) onSituationChanged(), ...
-                           'Tooltip', 'The situation of the photo: night, small plate, big plate, angled, noisy, blurry, ...');
-        sg2 = uigridlayout(g, [1 2]);  sg2.Padding = [0 0 0 0];  sg2.ColumnSpacing = 5;
-        uibutton(sg2, 'push', 'Text', 'Use recommended', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) onUseRecommended(), ...
-                 'Tooltip', 'Put the filters that fit this situation into the boxes below');
-        uibutton(sg2, 'push', 'Text', 'Enlarge text', 'ButtonPushedFcn', @(~, ~) onEnlarge(), ...
+        uilabel(g, 'Text', 'Pick up to four filters yourself (they run in this order on the ORIGINAL photo). With no filter ticked the original photo is read.', 'WordWrap', 'on');
+        uibutton(g, 'push', 'Text', 'Enlarge text', 'ButtonPushedFcn', @(~, ~) onEnlarge(), ...
                  'Tooltip', 'Show the text of the box at the bottom in a big window');
         pr = uigridlayout(g, [1 2]);  pr.Padding = [0 0 0 0];  pr.ColumnWidth = {110, '1x'};
         uilabel(pr, 'Text', 'Border (padding):');
@@ -157,7 +150,7 @@ app.operations = ops;
                  'Tooltip', 'Read the original and the filtered photo and print both results');
         uibutton(pg2, 'push', 'Text', 'Remove filters', 'ButtonPushedFcn', @(~, ~) onClearFilters(), ...
                  'Tooltip', 'Go back to the original photo');
-        h.report = uitextarea(g, 'Editable', 'off', 'FontSize', 13, 'Value', {'No filter chosen yet. Choose a situation and press "Use recommended".'});
+        h.report = uitextarea(g, 'Editable', 'off', 'FontSize', 13, 'Value', {'No filter chosen: the original photo is used. Pick filters above or press "Suggest filters".'});
     end
 
     function v = kernelPresets(what, k)
@@ -188,21 +181,30 @@ app.operations = ops;
     end
 
     function h = buildPlateTab(tab)
-        g = uigridlayout(tab, [11 1]);
-        g.RowHeight = {22, 28, 22, 28, 26, 22, 32, 32, 32, 32, '1x'};  g.Padding = [6 6 6 6];  g.RowSpacing = 5;
+        g = uigridlayout(tab, [15 1]);
+        g.RowHeight = {22, 28, 22, 28, 26, 26, 26, 26, 22, 32, 28, 32, 32, 32, '1x'};  g.Padding = [6 6 6 6];  g.RowSpacing = 5;
         uilabel(g, 'Text', 'Plate layout (optional): L = letter, D = digit');
         h.format = uieditfield(g, 'text', 'Value', '', 'Placeholder', 'e.g. LLL DDDD');
         uilabel(g, 'Text', 'Character colour');
         h.polarity = uidropdown(g, 'Items', {'auto', 'dark', 'bright'}, 'Value', 'auto');
-        h.all = uicheckbox(g, 'Text', 'Find ALL plates (road scene with many cars)', 'Value', false);
+        h.all = uicheckbox(g, 'Text', 'Find ALL plates (road scene with many cars)', 'Value', true);
+        h.cars = uicheckbox(g, 'Text', 'Car by car: crop every car and read it too (slower)', 'Value', true, ...
+                            'Tooltip', 'Every car is cut out around its plate or its tail lights, enlarged and searched again; cars whose plate was missed in the whole photo get a second chance');
+        h.night = uicheckbox(g, 'Text', 'Night vision (dark photo)', 'Value', false, ...
+                             'Tooltip', 'Removes the illumination, lifts the shadows and reduces noise, then searches this copy too');
+        h.vote = uicheckbox(g, 'Text', 'Vote over filtered copies (slower, +3 % exact)', 'Value', false);
         h.carLabel = uilabel(g, 'Text', 'Vehicle: whole photo');
         pg = uigridlayout(g, [1 2]);  pg.Padding = [0 0 0 0];  pg.ColumnSpacing = 5;
         uibutton(pg, 'push', 'Text', 'Pick vehicle...', 'ButtonPushedFcn', @(~,~) onPickCar());
         uibutton(pg, 'push', 'Text', 'Whole photo', 'ButtonPushedFcn', @(~,~) onClearCar());
+        sp = uigridlayout(g, [1 2]);  sp.Padding = [0 0 0 0];  sp.ColumnSpacing = 5;  sp.ColumnWidth = {70, '1x'};
+        uilabel(sp, 'Text', 'Show plate:');
+        h.pick = uidropdown(sp, 'Items', {'-'}, 'ItemsData', {0}, 'Value', 0, 'ValueChangedFcn', @(~, ~) onPickPlate(), ...
+                            'Tooltip', 'After "Find ALL plates": the plate whose segmentation is shown in "Result"');
         uibutton(g, 'push', 'Text', 'Recognise plate', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~,~) onRecognize());
         uibutton(g, 'push', 'Text', 'Show pipeline stages', 'ButtonPushedFcn', @(~,~) onPipeline());
         uibutton(g, 'push', 'Text', 'Train SVM model...', 'ButtonPushedFcn', @(~,~) onTrain());
-        h.result = uilabel(g, 'Text', '', 'FontSize', 26, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
+        h.result = uilabel(g, 'Text', '', 'FontSize', 26, 'FontWeight', 'bold', 'HorizontalAlignment', 'center', 'WordWrap', 'on');
     end
 
     function refreshParams(h, m)
@@ -235,6 +237,7 @@ app.operations = ops;
         [f, d] = uigetfile({'*.jpg;*.jpeg;*.jfif;*.png;*.bmp;*.tif;*.tiff', 'Images (jpg, jfif, png, bmp, tif)'; '*.*', 'All files'}, 'Select an image');
         if isequal(f, 0), return; end
         try
+            S.truth = '';                                         % a photo of your own has no known true plate (the old text stayed on screen)
             loadImage(readImageFile(fullfile(d, f)), f);
         catch ME
             uialert(fig, imageErrorText(ME, f), 'Cannot read image');
@@ -258,6 +261,7 @@ app.operations = ops;
     function openFileScripted(f)
         % scripted access: app.openFile('photo.jfif') = "Open image..." without the file dialog
         [~, nm, ext] = fileparts(f);
+        S.truth = '';
         loadImage(readImageFile(f), [nm ext]);
     end
 
@@ -290,6 +294,7 @@ app.operations = ops;
             uialert(fig, 'images/real/labels.csv was not found.', 'Real photos'); return;
         end
         T = readtable(f, 'TextType', 'string', 'Delimiter', ',');
+        T = T(isfile(fullfile(root, 'images', 'real', T.file)), :);        % the OpenALPR photos are not in the repository
         S.realIdx = mod(S.realIdx, height(T)) + 1;
         k = S.realIdx;
         S.truth = char(T.plate_text(k));
@@ -301,9 +306,9 @@ app.operations = ops;
         if nargin < 2, label = 'image'; end
         img = limitSize(toDouble(img));
         if size(img, 3) == 4, img = img(:,:,1:3); end
-        S.orig = img;  S.I = img;  S.result = [];  S.lastRes = [];  S.roi = [];  S.filtered = [];  S.filterNote = {};
+        S.orig = img;  S.I = img;  S.result = [];  S.lastRes = [];  S.roi = [];  S.filtered = [];  S.filterNote = {};  S.plates = [];  S.unread = [];  S.cars = [];
         try plate.carLabel.Text = 'Vehicle: whole photo'; catch, end   %#ok<CTCH>
-        try setStagesFromChain([]);  filt.report.Value = {'A new photo is loaded: Filter 1 to Filter 4 were cleared. Choose its situation to set filters.'}; catch, end   %#ok<CTCH>
+        try setStagesFromChain([]);  filt.report.Value = {'A new photo is loaded: Filter 1 to Filter 4 were cleared.'}; catch, end   %#ok<CTCH>
         fileLabel.Text = sprintf('%s  (%d x %d)', label, size(img, 2), size(img, 1));
         showImage(axOrig, S.I, 'Original');
         cla(axRes);  resetAux();  axis(axAux, 'off');
@@ -446,34 +451,6 @@ app.operations = ops;
         lines = lines(:);
     end
 
-    function onSituationChanged()
-        % choosing a situation sets its recommended filters (Filter 1 ... Filter 4) and "Recognise plate" uses them;
-        % before, the filters were filled only by "Use recommended", and a photo of a small plate was read without any filter
-        onUseRecommended();
-    end
-
-    function onUseRecommended()
-        adv = situationAdvice();
-        q = filt.sit.Value;
-        setStagesFromChain(adv(q).chain);
-        plate.all.Value = adv(q).findAll;                         % several cars: every plate is searched
-        filt.report.Value = situationAdvice(adv(q).id);
-        if isempty(adv(q).chain)
-            log_({['Situation: ' adv(q).title], 'No filter is recommended: Filter 1 to Filter 4 were cleared, the original photo is used. See the text in the filter panel.'});
-        else
-            log_({['Situation: ' adv(q).title], 'The recommended filters are set in Filter 1, Filter 2 ... on the right and "Recognise plate" uses them (the original photo is kept: "Remove filters" clears them). "Preview filtered" and "Compare with original" show the effect.'});
-        end
-    end
-
-    function useRecommendedScripted(id)
-        % scripted access: app.useRecommended('small')
-        adv = situationAdvice();
-        q = find(strcmp({adv.id}, id), 1);
-        if isempty(q), error('LPR_Toolbox:situation', 'No situation called "%s".', id); end
-        filt.sit.Value = q;
-        onUseRecommended();
-    end
-
     function bf = onEnlarge()
         % the text of the filter panel in a big window with big letters
         txt = filt.report.Value;
@@ -594,11 +571,11 @@ app.operations = ops;
         extra = {};
         if ~plate.all.Value && ~isempty(S.lastRes) && ~S.lastRes.found && ~isempty(S.filterNote)
             % nothing found in the filtered photo: say whether the filters are to blame
-            opts = {'Format', plate.format.Value, 'Polarity', plate.polarity.Value};
+            opts = {'Format', plate.format.Value, 'Polarity', plate.polarity.Value, 'Consensus', plate.vote.Value};
             if sameSize, opts = [opts, {'ROI', roi0}]; end
             try r0 = recognizePlate(S.orig, S.model, opts{:}); catch, r0 = []; end %#ok<CTCH>
             if ~isempty(r0) && r0.found
-                extra = {'', sprintf('The ORIGINAL photo reads %s, so these filters made it worse. Press "Remove filters" or try other filters (a Situation + "Use recommended" gives a tested choice).', r0.text)};
+                extra = {'', sprintf('The ORIGINAL photo reads %s, so these filters made it worse. Press "Remove filters" or try other filters ("Suggest filters" proposes a chain).', r0.text)};
             else
                 extra = {'', 'The original photo gives no plate either, so the filters are not the cause: see the hint above.'};
             end
@@ -617,7 +594,7 @@ app.operations = ops;
         [F, ok] = runFilters();
         if ~ok || ~ensureModel(), return; end
         fig.Pointer = 'watch';  drawnow;
-        opts = {'Format', plate.format.Value, 'Polarity', plate.polarity.Value};
+        opts = {'Format', plate.format.Value, 'Polarity', plate.polarity.Value, 'Consensus', plate.vote.Value};
         sameSize = isequal(size(F, 1:2), size(S.orig, 1:2));
         if sameSize, opts = [opts, {'ROI', S.roi}]; end
         try
@@ -703,90 +680,155 @@ app.operations = ops;
     end
 
     function onRecognizeAll()
-        % every plate the plate SVM accepts (road scenes); small plates are marked unreliable
-        fig.Pointer = 'watch';  drawnow;
+        % every plate the plate SVM accepts (road scenes), car by car if ticked; small plates are marked unreliable
+        fig.Pointer = 'watch';
+        dlg = [];
+        try dlg = uiprogressdlg(fig, 'Title', 'Reading all plates', 'Indeterminate', 'on', ...
+                'Message', 'Searching every car of the photo. A big photo with many cars can take a few minutes.'); catch, end %#ok<CTCH>
+        drawnow;
         t0 = tic;
         try
-            [out, unread] = recognizePlates(S.I, S.model, 'ROI', S.roi);
+            [out, unread, cars] = recognizePlates(S.I, S.model, 'ROI', S.roi, 'Consensus', plate.vote.Value, 'Cars', plate.cars.Value, 'NightVision', plate.night.Value);
         catch ME
-            fig.Pointer = 'arrow';  uialert(fig, ME.message, 'Recognition failed');  return;
+            closeDlg(dlg);  fig.Pointer = 'arrow';  uialert(fig, ME.message, 'Recognition failed');  return;
         end
+        closeDlg(dlg);
         fig.Pointer = 'arrow';
-        S.lastRes = [];
+        S.lastRes = [];  S.plates = out;  S.unread = unread;  S.cars = cars;
         tabs.SelectedTab = tabPlate;
-        showImage(axOrig, S.I, sprintf('%d plate(s) read, %d plate-like region(s) not read', numel(out), numel(unread)));
+        ttl = sprintf('%d plate(s) read, %d plate-like region(s) not read', numel(out), numel(unread));
+        if ~isempty(cars), ttl = sprintf('%s, %d car(s) (blue)', ttl, numel(cars)); end
+        showImage(axOrig, S.I, ttl);
         drawRoi();
         hold(axOrig, 'on');
+        for k = 1:numel(cars)
+            rectangle(axOrig, 'Position', cars(k).box, 'EdgeColor', [0.2 0.7 1], 'LineWidth', 1, 'LineStyle', ':');
+        end
         lines = cell(1, numel(out));
         for k = 1:numel(out)
             if out(k).reliable, col = [1 0.1 0.1]; else, col = [1 0.6 0]; end
             rectangle(axOrig, 'Position', out(k).box, 'EdgeColor', col, 'LineWidth', 2);
-            text(axOrig, out(k).box(1), max(out(k).box(2) - 4, 1), sprintf('%d: %s', k, out(k).text), 'Color', [1 1 0], ...
-                 'FontSize', 9, 'FontWeight', 'bold', 'BackgroundColor', [0 0 0], 'Interpreter', 'none', 'Clipping', 'on');
+            text(axOrig, out(k).box(1), max(out(k).box(2) - 3, 1), sprintf('%d: %s', k, out(k).text), 'Color', [1 1 0], 'VerticalAlignment', 'bottom', ...
+                 'FontSize', 10, 'FontWeight', 'bold', 'BackgroundColor', [0 0 0], 'Interpreter', 'none', 'Clipping', 'on');
             note = '';
             if ~out(k).reliable, note = '  (plate too small: reading unreliable)'; end
-            if out(k).lines == 2, note = [note '  (two-line plate: upper and lower row)']; end
+            if out(k).lines == 2, note = [note '  (two-line plate: upper and lower row)']; end %#ok<AGROW>
             lines{k} = sprintf('%d) %s   plate %d px wide, plate-SVM score %.2f%s', k, out(k).text, out(k).width, out(k).score, note);
         end
         for k = 1:numel(unread)                                    % plate-like regions that could not be read
             rectangle(axOrig, 'Position', unread(k).box, 'EdgeColor', [0.75 0.75 0.75], 'LineWidth', 1.5, 'LineStyle', '--');
-            text(axOrig, unread(k).box(1), max(unread(k).box(2) - 4, 1), sprintf('?%d', k), 'Color', [0.85 0.85 0.85], 'FontSize', 8, ...
+            text(axOrig, unread(k).box(1), max(unread(k).box(2) - 3, 1), sprintf('?%d', k), 'Color', [0.85 0.85 0.85], 'FontSize', 9, 'VerticalAlignment', 'bottom', ...
                  'Interpreter', 'none', 'Clipping', 'on');
             lines{end+1} = sprintf('?%d) plate-like region, %d px wide, not read (too small, blurred, or glare)', k, unread(k).width); %#ok<AGROW>
         end
         hold(axOrig, 'off');
-        cla(axRes);  showGallery(out, unread);
+        items = arrayfun(@(k) sprintf('%d: %s', k, out(k).text), 1:numel(out), 'UniformOutput', false);
+        if isempty(items), plate.pick.Items = {'-'};  plate.pick.ItemsData = {0};  plate.pick.Value = 0;
+        else, plate.pick.Items = items;  plate.pick.ItemsData = num2cell(1:numel(out));  plate.pick.Value = 1; end
+        showPlateDetail(1);
+        showGallery(out, unread, cars);
         if isempty(out)
-            plate.result.Text = '0 plates';
+            plate.result.Text = '0 plates';  plate.result.FontSize = 26;
             msg = sprintf(['No plate could be read [%.1f s]. A plate needs about 100 pixels of width to be read; plates of 30 pixels or less ' ...
-                           'cannot be found or read by any filter. For a night photo choose the situation "Many cars at night" or "Night, small or far plate".'], toc(t0));
+                           'cannot be found or read by any filter. For a dark photo tick "Night vision".'], toc(t0));
             if ~isempty(unread)
                 msg = sprintf('%s %d plate-like region(s) were found (grey dashed boxes): look at them in the photo or take a closer picture.', msg, numel(unread));
             end
             log_([{msg}, lines]);
         else
-            plate.result.Text = sprintf('%d plates', numel(out));
+            plate.result.Text = strjoin({out.text}, '   ');  plate.result.FontSize = 26 - 8 * (numel(out) > 1) - 4 * (numel(out) > 3);
             log_([{sprintf('%d plate(s) read, %d plate-like region(s) not read [%.1f s]. The readings of small (orange) plates are often wrong.', numel(out), numel(unread), toc(t0))}, lines]);
+        end
+        if ~isempty(S.truth), infoBox.Value = [infoBox.Value(:); {['Ground truth (the photo of the list): ' S.truth]}]; end
+    end
+
+    function closeDlg(d)
+        if ~isempty(d), try close(d); catch, end, end %#ok<CTCH>
+    end
+
+    function onPickPlate()
+        showPlateDetail(plate.pick.Value);
+    end
+
+    function showPlateDetail(k)
+        % "Result": the plate k of the last "Find ALL plates" cut out and segmented, the number above it
+        out = S.plates;
+        if isempty(out) || k < 1 || k > numel(out)
+            cla(axRes);  title(axRes, 'Result');  return
+        end
+        o = out(k);
+        if ~isempty(o.segPlate) && ~isempty(o.charBoxes)
+            showImage(axRes, o.segPlate, sprintf('Plate %d: %s   (segmented, %d characters)', k, o.text, size(o.charBoxes, 1)));
+            hold(axRes, 'on');
+            for q = 1:size(o.charBoxes, 1)
+                rectangle(axRes, 'Position', o.charBoxes(q, :), 'EdgeColor', [0 0.8 0], 'LineWidth', 1.5);
+            end
+            hold(axRes, 'off');
+        else
+            b = round(o.box);  I = S.I;
+            showImage(axRes, I(max(1, b(2)):min(size(I, 1), b(2) + b(4) - 1), max(1, b(1)):min(size(I, 2), b(1) + b(3) - 1), :), ...
+                      sprintf('Plate %d: %s', k, o.text));
         end
     end
 
-    function showGallery(out, unread)
-        % crops of all plates found with their number and reading (red frame: readable size, orange: small)
+    function showGallery(out, unread, cars)
+        % one tile per plate: its number above, the car (when it was cut out) or the plate in the middle, the characters the SVM saw below
+        % (red frame = readable size, orange = small and unreliable, grey = plate-like region that was not read)
         resetAux();
-        if isempty(out) && isempty(unread), return; end
+        nO = numel(out);  nU = numel(unread);  nAll = nO + nU;
+        if nAll == 0, return; end
         I = S.I;  if size(I, 3) == 1, I = repmat(I, [1 1 3]); end
-        perRow = 4;  hh = 64;  cw = 240;  th = 26;  g = 8;
-        boxes = [vertcat(out.box); vertcat(unread.box)];  reli = [[out.reliable].'; false(numel(unread), 1)];
-        labels = [arrayfun(@(k) sprintf('%d: %s', k, out(k).text), 1:numel(out), 'UniformOutput', false), ...
-                  arrayfun(@(k) sprintf('?%d: not read', k), 1:numel(unread), 'UniformOutput', false)];
-        nAll = size(boxes, 1);
+        perRow = 5;  ph = 104;  pw = 156;  sh = 26;  lh = 24;  g = 8;
+        th = lh + ph + sh;
         nR = ceil(nAll / perRow);
-        canvas = 0.08 * ones(nR * (hh + th + g) + g, perRow * (cw + g) + g, 3);
-        xs = zeros(nAll, 1);  ys = xs;
+        canvas = 0.08 * ones(nR * (th + g) + g, perRow * (pw + g) + g, 3);
+        xs = zeros(nAll, 1);  ys = xs;  labels = cell(1, nAll);
         for k = 1:nAll
-            b = round(boxes(k, :));
-            r = max(1, b(2)):min(size(I, 1), b(2) + b(4) - 1);  c = max(1, b(1)):min(size(I, 2), b(1) + b(3) - 1);
-            crop = I(r, c, :);
-            sc = min((hh - 4) / size(crop, 1), (cw - 4) / size(crop, 2));
+            if k <= nO, b = out(k).box;  labels{k} = sprintf('%d: %s', k, out(k).text);
+            else, b = unread(k - nO).box;  labels{k} = sprintf('?%d: not read', k - nO); end
+            reg = round(b);
+            if k <= nO && ~isempty(cars)
+                q = find([cars.plate] == k, 1);
+                if ~isempty(q), reg = round(cars(q).box); end
+            end
+            x0r = max(1, reg(1));  y0r = max(1, reg(2));  x1r = min(size(I, 2), reg(1) + reg(3) - 1);  y1r = min(size(I, 1), reg(2) + reg(4) - 1);
+            crop = I(y0r:y1r, x0r:x1r, :);
+            if k > nO, col = [0.6 0.6 0.6]; elseif out(k).reliable, col = [1 0.1 0.1]; else, col = [1 0.6 0]; end
+            crop = frameBox(crop, [b(1) - x0r + 1, b(2) - y0r + 1, b(3), b(4)], col);       % the plate inside the picture
+            sc = min((ph - 4) / size(crop, 1), (pw - 4) / size(crop, 2));
             crop = imResize(crop, sc, 'bilinear');
-            if k > numel(out), col = [0.6 0.6 0.6]; elseif reli(k), col = [1 0.1 0.1]; else, col = [1 0.6 0]; end
             row = ceil(k / perRow);  cc = mod(k - 1, perRow) + 1;
-            y0 = g + (row - 1) * (hh + th + g);  x0 = g + (cc - 1) * (cw + g);
-            tile = repmat(reshape(col, 1, 1, 3), hh, cw);
-            tile(3:hh-2, 3:cw-2, :) = 0.08;
-            oy = floor((hh - size(crop, 1)) / 2);  ox = floor((cw - size(crop, 2)) / 2);
+            y0 = g + (row - 1) * (th + g);  x0 = g + (cc - 1) * (pw + g);
+            tile = repmat(reshape(col, 1, 1, 3), ph, pw);
+            tile(3:ph-2, 3:pw-2, :) = 0.08;
+            oy = floor((ph - size(crop, 1)) / 2);  ox = floor((pw - size(crop, 2)) / 2);
             tile(oy+1:oy+size(crop, 1), ox+1:ox+size(crop, 2), :) = min(max(crop, 0), 1);
-            canvas(y0+1:y0+hh, x0+1:x0+cw, :) = tile;
-            xs(k) = x0;  ys(k) = y0 + hh + 14;
+            canvas(y0+lh+1:y0+lh+ph, x0+1:x0+pw, :) = tile;
+            if k <= nO && ~isempty(out(k).chars)                                           % what the SVM saw: the 32 x 32 characters
+                strip = [];
+                for q = 1:numel(out(k).chars), strip = [strip, out(k).chars{q}, zeros(32, 3)]; end %#ok<AGROW>
+                strip = imResize(1 - strip, min((sh - 4) / size(strip, 1), (pw - 4) / size(strip, 2)), 'bilinear');
+                canvas(y0+lh+ph+2:y0+lh+ph+1+size(strip, 1), x0+2:x0+1+size(strip, 2), :) = repmat(min(max(strip, 0), 1), [1 1 3]);
+            end
+            xs(k) = x0;  ys(k) = y0 + lh / 2;
         end
         axis(axAux, 'on');
-        showImage(axAux, canvas, 'All plates: number and reading (red frame = readable size, orange = small, reading unreliable, grey = plate-like region not read)');
+        showImage(axAux, canvas, 'All plates: the number is above every picture, the characters the SVM saw below it (red = readable, orange = small, grey = not read)');
         hold(axAux, 'on');
         for k = 1:nAll
-            text(axAux, xs(k) + 2, ys(k), labels{k}, 'Color', [1 1 0], 'FontSize', 11, ...
-                 'FontWeight', 'bold', 'Interpreter', 'none');
+            text(axAux, xs(k) + 3, ys(k), labels{k}, 'Color', [1 1 0], 'FontSize', 12, 'FontWeight', 'bold', 'Interpreter', 'none', 'VerticalAlignment', 'middle');
         end
         hold(axAux, 'off');
+    end
+
+    function C = frameBox(C, bx, col)
+        % draw a 1 pixel frame [x y w h] into the picture C (the plate inside its car)
+        x0 = max(1, round(bx(1)));  y0 = max(1, round(bx(2)));
+        x1 = min(size(C, 2), round(bx(1) + bx(3)));  y1 = min(size(C, 1), round(bx(2) + bx(4)));
+        if x1 <= x0 || y1 <= y0, return; end
+        for ch = 1:3
+            C(y0, x0:x1, ch) = col(ch);  C(y1, x0:x1, ch) = col(ch);  C(y0:y1, x0, ch) = col(ch);  C(y0:y1, x1, ch) = col(ch);
+        end
     end
 
     function onRecognize()
@@ -802,7 +844,7 @@ app.operations = ops;
         fig.Pointer = 'watch';  drawnow;
         t0 = tic;
         try
-            res = recognizePlate(S.I, S.model, 'Format', plate.format.Value, 'Polarity', plate.polarity.Value, 'ROI', S.roi);
+            res = recognizePlate(S.I, S.model, 'Format', plate.format.Value, 'Polarity', plate.polarity.Value, 'ROI', S.roi, 'Consensus', plate.vote.Value);
         catch ME
             fig.Pointer = 'arrow';  uialert(fig, ME.message, 'Recognition failed');  return;
         end
@@ -811,10 +853,15 @@ app.operations = ops;
         tabs.SelectedTab = tabPlate;
         showImage(axOrig, S.I, 'Input and detected plate');
         drawRoi();
-        if res.found && ~isempty(res.bbox), rectangle(axOrig, 'Position', res.bbox, 'EdgeColor', 'r', 'LineWidth', 2); end
+        S.plates = [];  plate.pick.Items = {'-'};  plate.pick.ItemsData = {0};  plate.pick.Value = 0;
+        if res.found && ~isempty(res.bbox)
+            rectangle(axOrig, 'Position', res.bbox, 'EdgeColor', 'r', 'LineWidth', 2);
+            text(axOrig, res.bbox(1), max(res.bbox(2) - 3, 1), res.text, 'Color', [1 1 0], 'VerticalAlignment', 'bottom', 'FontSize', 12, ...
+                 'FontWeight', 'bold', 'BackgroundColor', [0 0 0], 'Interpreter', 'none', 'Clipping', 'on');          % the number above the plate
+        end
         if res.found
             s = res.segDebug;
-            showImage(axRes, s.plate, sprintf('Segmented plate (%d characters)', numel(res.chars)));
+            showImage(axRes, s.plate, sprintf('Segmented plate: %s   (%d characters)', res.text, numel(res.chars)));
             for k = 1:size(res.boxes, 1)
                 rectangle(axRes, 'Position', res.boxes(k,:), 'EdgeColor', [0 0.8 0], 'LineWidth', 1.5);
             end
@@ -822,7 +869,8 @@ app.operations = ops;
             for k = 1:numel(res.chars), strip = [strip, res.chars{k}, zeros(32, 4)]; end %#ok<AGROW>
             resetAux();  axis(axAux, 'on');
             showImage(axAux, 1 - strip, 'Normalised characters (32x32) fed to the SVM');
-            plate.result.Text = res.text;
+            title(axAux, {['SVM reads: ' res.text], 'normalised characters (32x32) fed to the SVM'}, 'FontWeight', 'bold', 'Interpreter', 'none');
+            plate.result.Text = res.text;  plate.result.FontSize = 26;
             msg = sprintf('Plate read: %s   (mean vote confidence %.0f %%)  [%.2f s]', res.text, 100 * mean(res.conf), toc(t0));
             if isequal(res.bbox, [1 1 size(S.I, 2) size(S.I, 1)])
                 msg = sprintf('%s\n(The photo was read as a plate close-up: no search for the plate was needed.)', msg);
@@ -848,7 +896,7 @@ app.operations = ops;
                 if ~isempty(res.reason), msg = sprintf('No plate found (%s).', res.reason); end
                 log_([msg ' This system needs a plate that is at least ~100 pixels wide with 4 or more separable characters. ' ...
                       'Try a closer photo, pick one vehicle (car, bus, truck, motorcycle) with "Pick vehicle...", or set the character colour. ' ...
-                      'For a small or far plate use the filter panel: Situation "Small or far plate" > "Use recommended" > "Recognise on filtered photo".']);
+                      'For a dark photo tick "Night vision"; for a small or far plate tick "Car by car" with "Find ALL plates".']);
             end
         end
     end

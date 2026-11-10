@@ -54,6 +54,9 @@ function [chars, boxes, dbg] = segmentChars(plateImg, varargin)
 %            'Split'    true: a component that is much wider than tall (two to five bold or blurred characters
 %                       that touch, as in small night plates: MH14 TCF 735 -> three blobs) is cut at the
 %                       minima of its vertical projection before the characters are selected (default false)
+%            'FixMerged' true: a character of the chosen row that is at least 1.6 times as wide as the others (and as wide as 0.65
+%                       of the character height) is two characters that touch (F + H of FHM 5505, "20" and "EE" of MH 20 EE 0943);
+%                       it is cut at the lowest column of its vertical projection and the row is chosen again (default false)
 %
 %   Steps: resize and smooth -> Otsu binarisation (characters = foreground)
 %   -> connected components -> keep the group of components that look like
@@ -84,8 +87,10 @@ p.addParameter('Open', 0);
 p.addParameter('Rules', false);
 p.addParameter('Flat', false);
 p.addParameter('Proj', false);
+p.addParameter('FixMerged', false);
 p.parse(varargin{:});
 o = p.Results;
+o.Fix = o.FixMerged;
 
 if o.Tighten, plateImg = tightenPlate(plateImg); end         % cut the dark / bright strips around the plate off
 G = channelImage(plateImg, o.Channel);
@@ -100,7 +105,7 @@ if o.SearchAngle                                          % tight plate photo: f
     bestScore = -1;  bestA = 0;
     for a = -o.AngleRange:4:o.AngleRange
         Ga = rotateFill(G, a);
-        rs = bestPolarity(Ga, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj);
+        rs = bestPolarity(Ga, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj, o.Fix);
         sc = 0;
         if rs.n >= 3, sc = plateRowScore(rs.props.BoundingBox(rs.keep, :)) + 0.02 * rs.n; end
         if sc > bestScore + 1e-9 || (abs(sc - bestScore) <= 1e-9 && abs(a) < abs(bestA)), bestScore = sc;  bestA = a; end
@@ -112,7 +117,7 @@ if o.SearchShear                                          % slanted characters: 
     bestScore = -1;  bestS = 0;
     for sh = -o.ShearRange:0.15:o.ShearRange
         Gh = shearFill(G, sh);
-        rs = bestPolarity(Gh, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj);
+        rs = bestPolarity(Gh, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj, o.Fix);
         sc = 0;
         if rs.n >= 3, sc = plateRowScore(rs.props.BoundingBox(rs.keep, :)) + 0.02 * rs.n; end
         if sc > bestScore + 1e-9 || (abs(sc - bestScore) <= 1e-9 && abs(sh) < abs(bestS)), bestScore = sc;  bestS = sh; end
@@ -237,7 +242,7 @@ for pass = 1:2
 end
 end
 
-function [res, G] = bestPolarity(G, polarity, strategies, hr, region, levels, select, split, open, rules, flat, proj)
+function [res, G] = bestPolarity(G, polarity, strategies, hr, region, levels, select, split, open, rules, flat, proj, fix)
 % Binarise with the requested strategies (global Otsu / local adaptive threshold) for
 % dark and/or bright characters and keep the one with the best group of characters.
 [H, W] = size(G);
@@ -271,7 +276,7 @@ for k = 1:size(cands, 1)
         end
         if open > 0, BW = morphOp(BW, 'open', makeSE('rect', [open, open])); end       % thin bridges (shadow strip, frame) go, strokes stay
         if rules, BW = removeLongRuns(BW); end
-        r = groupCharacters(BW, hr, split, proj);
+        r = groupCharacters(BW, hr, split, proj, fix);
         r.polarity = [pol ' (' how ')'];
         r.BW = BW;
         r.row = 0;
@@ -286,11 +291,68 @@ for k = 1:size(cands, 1)
 end
 end
 
-function r = groupCharacters(BW, hr, split, proj)
+function r = groupCharacters(BW, hr, split, proj, fix)
 % Find the largest set of same-height components that lie on one straight line.
 [H, W] = size(BW);
 if proj, [L, n] = projectionLabels(BW); else, [L, n] = labelComponents(BW, 8); end
 if split, [L, n] = splitWideComponents(L, n); end
+r = pickRow(L, n, H, W, hr);
+for rep = 1:2                                               % two characters that touch: cut them and choose the row again (a second round for a piece that is still too wide)
+    if ~fix || r.n < 3, break; end
+    [L2, n2, did] = splitOutliers(L, n, r);
+    if ~did, break; end
+    r2 = pickRow(L2, n2, H, W, hr);
+    if r2.n <= r.n, break; end
+    r = r2;  L = L2;  n = n2;
+end
+end
+
+function [L, n, did] = splitOutliers(L, n, r)
+% A character of the row that is much wider than the others is two characters that touch (F + H, "20", "EE" of a blurred plate).
+% It is cut at the lowest column of its vertical projection (near the middle of every part; 2 or 3 parts), but only where that column holds at most
+% 22 % of the highest column: the merged F + H measured 0.11 to 0.13, the wide M and W of synthetic plates 0.27 to 0.40 (without this test the synthetic
+% pipeline check fell from 93 % to 70 % characters). (Also cutting the components that
+% were not kept because they are too wide for one character, "0943" of MH 20 EE 0943, gave "MH20EE0P43" and lost two held-out plates: not used.)
+did = false;
+bb = r.props.BoundingBox(r.keep, :);
+w = bb(:, 3);  h = bb(:, 4);  k = numel(w);  hm = median(h);
+for i = 1:k
+    u = min(median(w([1:i-1, i+1:k])), 0.62 * hm);            % a single character: the others' width, but never wider than 0.62 x height
+    if w(i) < 1.6 * u || w(i) < 0.65 * hm, continue; end
+    [L, n, ok] = cutComponent(L, n, r.props.BoundingBox(r.keep(i), :), r.keep(i), min(3, max(2, round(w(i) / u))), hm);
+    did = did || ok;
+end
+end
+
+function [L, n, did] = cutComponent(L, n, bq, q, parts, hm)
+% cut component q (bounding box bq) into 'parts' pieces at the lowest columns of its vertical projection near the equal divisions
+did = false;
+c = bq(1):bq(1) + bq(3) - 1;  rr = bq(2):bq(2) + bq(4) - 1;
+w = bq(3);
+mask = L(rr, c) == q;
+pj = sum(mask, 1);
+cuts = zeros(1, parts - 1);
+for j = 1:parts - 1
+    ex = j * w / parts;
+    lo = max(2, round(ex - 0.3 * w / parts));  hi = min(w - 1, round(ex + 0.3 * w / parts));
+    if lo > hi, return; end
+    [~, im] = min(pj(lo:hi) + 1e-6 * abs((lo:hi) - ex));
+    cuts(j) = lo + im - 1;
+    if pj(cuts(j)) > 0.22 * max(pj), return; end             % no deep valley: one wide character (M, W), not two that touch
+end
+if any(diff([0, cuts, w]) < 0.2 * hm), return; end
+piece = ones(1, numel(c));
+for j = 1:numel(cuts), piece(cuts(j)+1:end) = j + 1; end
+sub = L(rr, c);
+for j = 2:parts
+    n = n + 1;
+    sub(mask & repmat(piece == j, numel(rr), 1)) = n;
+end
+L(rr, c) = sub;
+did = true;
+end
+
+function r = pickRow(L, n, H, W, hr)
 props = componentProps(L, n);
 bb = props.BoundingBox;
 touches = bb(:,1) <= 1 | bb(:,2) <= 1 | bb(:,1) + bb(:,3) > W | bb(:,2) + bb(:,4) > H;
@@ -398,20 +460,20 @@ end
 function [res, G] = binarise(G, o)
 % bestPolarity on the grey plate, or on its top-hat images (large bright / dark blobs removed)
 if o.TopHat <= 0
-    [res, G] = bestPolarity(G, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj);
+    [res, G] = bestPolarity(G, o.Polarity, o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj, o.Fix);
     return
 end
 SE = makeSE('disk', max(3, round(o.TopHat * size(G, 1))));
 res = struct('n', -1, 'score', 0, 'row', -1);
 if any(strcmpi(o.Polarity, {'auto', 'bright'}))
     T = morphOp(G, 'tophat', SE);  T = T / max(max(T(:)), eps);               % bright characters on a flat background
-    r = bestPolarity(T, 'bright', o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj);
+    r = bestPolarity(T, 'bright', o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj, o.Fix);
     r.polarity = [r.polarity ', top-hat'];
     if r.n > res.n || (r.n == res.n && r.score > res.score), res = r; end
 end
 if any(strcmpi(o.Polarity, {'auto', 'dark'}))
     T = morphOp(G, 'blackhat', SE);  T = 1 - T / max(max(T(:)), eps);         % dark characters (low values)
-    r = bestPolarity(T, 'dark', o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj);
+    r = bestPolarity(T, 'dark', o.Strategies, o.HeightRange, o.LevelRegion, o.Levels, o.Select, o.Split, o.Open, o.Rules, o.Flat, o.Proj, o.Fix);
     r.polarity = [r.polarity ', top-hat'];
     if r.n > res.n || (r.n == res.n && r.score > res.score), res = r; end
 end

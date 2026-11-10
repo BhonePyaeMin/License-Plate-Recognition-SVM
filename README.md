@@ -36,9 +36,11 @@ from scratch in `toolbox/`.
    * **Real car photo** loads the real photographs of the project one after the other
      (the true plate is shown after recognition). **Open image…** loads your own photo,
      **Synthetic car photo** generates a test scene.
-   * Tab **4 Plate** → tick **Find ALL plates** for a road scene with many cars (every accepted region gets a
-     box and a reading; orange boxes = plate too small to read reliably) → **Recognise plate**. The detected plate is outlined, the segmented
-     characters and the 32×32 images given to the SVM are shown, the text appears in large
+   * Tab **4 Plate** → **Find ALL plates** (ticked from round 13 on) searches a road scene with many cars (every accepted region gets a
+     box and a reading, the **number is written above its box**; orange boxes = plate too small to read reliably) → **Recognise plate**. **Car by car**
+     (ticked) also cuts every car out (blue dotted frames) and searches the cars whose plate was missed; **Night vision** (not ticked) also searches a brightened copy of a dark
+     photo. The detected plate is outlined, the segmented characters ("Result"; **Show plate** chooses which plate when there are several) and the 32×32 images given to the SVM
+     (the gallery under the photo: number above, car or plate in the middle, SVM characters below) are shown, the text appears in large
      letters. If you know the plate layout, type it (`L` = letter, `D` = digit, space = gap,
      e.g. `LLL DDDD`): this removes O/0, I/1, B/8 confusions. **Show pipeline stages** opens
      a figure with every step.
@@ -61,12 +63,9 @@ from scratch in `toolbox/`.
      unsharp masking, Laplacian sharpening, Richardson-Lucy deblurring, gamma, brightness/contrast, contrast
      stretching, global and local (CLAHE) histogram equalisation, illumination correction, frequency-domain
      low-pass and band-pass. In a script: `J = applyPrefilters(img, struct('name','Median filter','p',3)); r = recognizePlate(J, model);`
-   * **Which filter for which photo?** At the top of the filter panel the drop-down *Situation* lists 16 situations
-     (night, small or far plate, big plate, angled plate seen from the side, seen from above, night + small plate,
-     many cars, many cars at night, any vehicle (motorcycle, scooter, bus, truck, taxi), white/black dots, grain, blurry, low contrast, shadow, glare,
-     photo of a screen); choosing one shows a short advice text (English). **Use recommended** puts the tested
-     filters of that situation into the four boxes (for night, big and glare photos the boxes are cleared:
-     **no filter** was the best choice in the tests, section 5a'''''''); for the "many cars" and "any vehicle" situations it also ticks **Find ALL plates** (tab 4).
+   * **Which filter for which photo?** The situation chooser ("Use recommended") was removed in round 13: the tests showed that **no filter** was
+     the best choice for most photos (section 5a''''''' and rounds 11 and 12, which describe the chooser as it was). **Suggest filters** still measures
+     the photo and fills the boxes, and you can pick up to four filters yourself.
      The four filter rows are called **Filter 1 ... Filter 4**: click the list of Filter 1 (it says "(none)"), choose a filter, type its numbers into the
      white fields under it. **Enlarge text** shows the text box of the panel in a
      big window with big letters. Choosing a filter in a box prints what the filter does, where it helps and where it hurts.
@@ -93,7 +92,7 @@ from scratch in `toolbox/`.
    | `demo_lpr('your.jpg','','pick')` | you click two corners around ONE car first (`pickCarROI`); only that car is searched |
    | `markPlateBoxes` | for every new photo in `images/real`: click the plate corners, type the plate text; appends to `plate_boxes.csv` and `labels.csv` (note `night`) |
    | `demo_modules` | runs all three modules on one image, saves comparison figures to `results/` |
-   | `run_tests` | 117 self-checks for every module and the recogniser |
+   | `run_tests` | 119 self-checks for every module and the recogniser |
    | `recognizePlates(img, model)` | finds and reads **all** plates of a photo (struct array: box, text, conf, score, width, reliable) |
    | `train_lpr_model` | (re)trains the synthetic character SVMs (`models/lpr_svm_model*.mat`) |
    | `train_real_model` | trains the plate SVM and the character SVM with the real photos, prints the held-out result (`train_real_model('plate')` retrains only the plate SVMs, ~3 min; `train_real_model('chars')` only the character SVMs, 1 min + the held-out test) |
@@ -711,6 +710,45 @@ Which readings are right without a filter: `1RAMI1`, `WH93Y`, `KA53C6932`, `T935
 the same plate right with and without a filter; where it fails, a filter does not rescue it. (3) For a photo of a single car use "Recognise plate" without filters (or unsharp masking); for traffic photos use "Find ALL plates" without filters. The situation list remains for
 noise, salt-and-pepper dots, shadows and screens, which these photos do not contain (measured in rounds 5 to 6).
 
+### 5a''''''''''''''. Screenshots of round 12: wrong filter, stale "ground truth", lamps, vote over filtered copies (2026-11-09)
+
+What the five screenshots showed and what was changed:
+* **Taxi `KA53C32` (wrong) in "Any vehicle".** That situation put "enlarge 2 + unsharp masking" into the filter boxes, and since round 9 "Recognise plate" uses them. Without a filter the same photo reads `KA53C6932` exactly. Round 11 had measured that the enlarging chains no longer help
+  (the plate crops are enlarged automatically), so the situations **small, night small, angled and any vehicle now recommend no filter** (`situationAdvice`, with the measured numbers in their text). Only noise, dots, shadow, screen, haze and blur keep a filter.
+* **"Ground truth: MKMM1099" under the night photo.** The true plate of the last "Real car photo" stayed in a variable when you opened your own photo. Opening a file now clears it (a photo of your own has no known true plate). "Real car photo" also skips photos that are not on the disk (the OpenALPR photos are not in the repository).
+* **Lights as plates.** Tail lights and reflectors appeared as grey "plate-like region not read" boxes (the plate SVM scores them -0.3 to 0, as the taxi's tail light -0.19). The lowest score of a grey box is now 0 (option `UnreadMin`, it was -0.3), and blank patches (black sky) and glowing lamp-like regions
+  (many saturated red pixels with a bright core, `looksLikeLamp`) get no box. On the taxi photo the grey boxes are gone and `KA53C6932` is read; on `dark.jpg` the box on a patch of black sky is gone (the red-lit plate itself is not listed by the present model either: 0 read, 0 unread).
+* **Vote over filtered copies (new, optional).** `consensusText` reads the found plate in three filtered copies (contrast stretching, CLAHE, Richardson-Lucy) and lets the characters vote together with the unfiltered reading. It exists because different filters flip different characters
+  (I and 1, 8 and B): on 106 held-out photos (16 project + 90 OpenALPR, dev models) a perfect choice among 8 filtered copies would give 68 exact plates, the single reading gives 56, the vote of all 8 copies 60 and of 3 copies 60 (project 9 -> 9, OpenALPR 47 -> 51; three more copies for a plate cost about 10 s).
+  Same-length-only voting gave 59, a whole-text vote 59. On 10 plates of your own photos the vote lost one plate (`T935AK797` -> `T935AK79`: the vote chose the length of 8 characters) and gained nothing, so it is **off by default**: option `'Consensus'` of `recognizePlate` / `recognizePlates` and the check box "Vote over filtered copies (slower, +3 % exact)" in the Plate tab.
+
+**Where the system stands on your photos (installed model, Find ALL, no filter; true texts read by eye; exact / readings found):** `T935AK797`, `6688EP2` (night traffic) and `KA53C6932` (taxi) exact; `V3PLUS1` (BMW), `BT4377` (Audi),
+`SLJ43E2C` (Singapore) wrong by one to three characters; Honda, `B178PC178`, `SLJ6473J` not read; Skoda `ZMHJEECF7` (true `MH20EE0943`). That is 3 of 10 plates exact, 55 % of the characters, 46 s per photo. A guarantee of correct numbers for every plate is not possible with this reader:
+on held-out photos of the same kinds as the training photos it reads about 55 % of the plates exactly, on photos of designs it has not seen far fewer (README rounds 8 to 11). What improves it is more labelled photos of the plates you care about (the 470-photo Indian sample of round 10 is waiting for you to download it).
+
+### 5a'''''''''''''''. Screenshots of round 13: merged characters, numbers above the plates, car by car, night vision (2026-11-10)
+
+What the screenshots showed and what was changed:
+* **The situation chooser and "Use recommended" are gone** (your request). Filter 1 to Filter 4, "Suggest filters", "Preview filtered", "Recognise on filtered photo" and "Compare" stay. `situationAdvice.m` was deleted. Sections 5a''''''' to 5a'''''''''''''' describe the chooser as it was.
+* **"Some photos show no result and no SVM picture".** With "Find ALL plates" the "Result" picture was blank and the SVM characters were missing. Now **Find ALL is ticked by default**, the **number is written above every plate box** (also in single mode), "Result" shows the segmented plate chosen in the new list **Show plate**,
+  and the gallery under the photo has one tile per plate: **the number above, the car (or the plate) in the middle, the 32 x 32 characters the SVM saw below**. In single mode the SVM picture has the number as its title. A progress window is shown while a big photo is searched (up to a few minutes).
+* **Merged characters (FHM 5505 was read `HM5505`).** F and H touched and formed one component of 40 px between components of 20 px. New option `FixMerged` of `segmentChars` (always on in `segmentPlateBest`): a character of the chosen row that is 1.6 times as wide as the others (and 0.65 of the character height) is cut at the lowest column of its projection, but only where that column holds at most 22 % of the highest one (the merged F + H measured 0.11 to 0.13, the wide M and W of the synthetic plates 0.27 to 0.40; the first version without this test cut good synthetic plates and the synthetic pipeline check fell from 93 % to 70 % characters).
+  The plate now has 7 characters of 18 to 21 px and is read `FMM5505` (6 of 7 right: the SVM still reads the blurred H as M). The Skoda plate `MH 20 EE 0943` had four blobs; `plateRowScore` now ignores the three widest gaps from 10 characters on (spaces of the text), so the variant with all 10 characters wins:
+  `MHHEE` -> `MR20EE0943` (9 of 10 right, H read as R). `recognizePlate` also tries the cutting variants of `Split` when the first reading failed or has 5 characters or fewer (`retrySplit`, option `Retry`), a regular row of 6 or more equally wide components is accepted by the validity check even when the mean score is only 0.15 to 0.2,
+  and a row with one component scored below -1.0 is refused (`charsLookValid`): three junk readings of held-out photos (`I918HHHUUUI`, `0L1J4Z`, `LI1IE81`) had one at -1.0 to -1.4.
+* **Held-out measurement (106 photos: 16 project + 90 OpenALPR test photos, dev models, single reading):** exact plates **56 -> 59**, characters 69.8 -> 70.9 % (project 9 -> 9 plates, 76.3 -> 72.1 % characters because the wrong reading `TGH82251` of `car_21` became the junk `1IIIIIII`; OpenALPR 47 -> 50 of 90). Gained: `us_us4`, `br_OLA1208`, `br_OZK6717`; no plate that was read exactly before was lost.
+  (These numbers were measured before the last rule of the round: a reading in which half of the characters or more are I or 1, five characters or more, is refused as a row of bars; it removes `1IIIIIII` and `G1EIJ7I1`.) Tried and **not used**: also cutting the components that were rejected as too wide (`0943` as one blob of 4 digits): `MH20EE0P43` and 2 held-out plates lost; ignoring 2 gaps from 8 characters on: `K545BNH` became `K545BNHZ`.
+* **Car by car (new, `readCars`, option `Cars` of `recognizePlates`, ticked by default in the GUI).** There is no car detector in base MATLAB, so cars are proposed from the plate search: a car region around every plate that was read (plate width x 5.2 wide, x 4.4 high), around plate-like regions that were not read (also weak ones, score -1.2 to 0)
+  and between two red tail lights of one row (no third lamp between them, not wider than 0.7 of the photo). A car without a plate is cut out, enlarged or shrunk to about 700 px width and searched with the lenient score -1.2; a plate read there is added (small plates orange). At most 4 such cars. The cars are drawn blue and dotted, and the gallery shows them.
+  **Measured on 15 plates of your photos (installed model, Find ALL): 4 exact with and without it, characters 56.2 % both, plates read 11 both, the same readings: it found no plate that the whole-photo search missed** (the second Nissan plate `W36AZL`, 33 px wide, is still not found: the plate SVM scores it -1.0 and no row of characters can be cut out of it). It costs 30 to 100 % more time (Nissan 69 -> 93 s, Honda 55 -> 129 s, alone on this PC).
+* **Night vision (new, `nightVision`, option `NightVision`, check box not ticked).** Single-scale retinex: the illumination (the photo shrunk to 80 px, blurred, enlarged) is divided out in the log domain, the result is stretched, a 3 x 3 median removes noise, the colours are kept; this copy is searched next to the exposure-repaired and the equalised copy.
+  **Measured: no gain.** 16 simulated dark test photos (dev model): 6 exact, 55.5 % characters with and without it. On your real night photos it added a junk reading (`LLJZU`) to `night.jpg` and on the night screenshot it listed `AHT617` in a box below the plate, on the green text that another program had written into the picture, not on the plate (the plate itself is about 60 px wide, blurred, with a red frame drawn over it: not readable).
+  It stays as an option because you asked for it, but the honest answer is that the reader's limit at night is the blur of the characters, not the brightness.
+* **Captions of graphics are no plates.** A flat black caption box (more than 40 % of the pixels equal to the median level +-0.012 and that level below 0.12) is not listed (the four captions of the traffic graphic measured 0.46 to 0.59 at level 0.05; 493 labelled plate boxes of the project and OpenALPR photos: none with both properties). A box that is wider than the caption can still be read as junk (`TA9O2FKJRD`).
+* **Where your photos stand (installed model, Find ALL, final code; true plates read by eye; exact / readings found):** exact: `T935AK797`, `6688EP2` (both night traffic), `KA53C6932` (taxi), `W35AZL` (Nissan, right). Close: `MR20EE0943` (`MH20EE0943`, H read as R), `FMM5505` (`FHM5505`, H read as M), `V3PLUS1` (`M3PLUS1`),
+  `6LJ4962E` (`SLJ4962C`), `BT4377` (`BT43110`). Wrong: `7MF49EEC31` for the single Skoda photo (`MH20EE0943`) and `WNTC1M4` for the red plate `MH20TC744A`. Not read: Honda `LB02APF`, `B178PC178`, `SLJ6473J`, `W36AZL`.
+  That is **4 of 15 plates exact, 11 of 15 read, 56 % of the characters**. A guarantee that every plate is read correctly is not possible with this reader; what still decides is the blur of 8 to 14 px characters (M/H, 9/6/3, 0/D confusions).
+
 ### 5a''. Photos of a plate only (the whole photo is the plate)
 
 If the uploaded photo is itself a close-up of a plate (width/height between 1.6 and 9, and a row of
@@ -828,7 +866,7 @@ depends strongly on the font (exact-plate rate on the four held-out fonts ≈ 64
 ```
 LPR_Toolbox.m           GUI                      train_lpr_model.m   synthetic character SVMs
 demo_lpr.m              recognise one image      train_real_model.m  plate SVM + real-photo SVM
-demo_modules.m          figures, all modules     run_tests.m         117 self-checks
+demo_modules.m          figures, all modules     run_tests.m         119 self-checks
 setup_toolbox.m         add folders to path
 toolbox/
   common/               toDouble, toGray, padImage, spatialFilter, gaussianKernel, showImage, imageMetrics, editDistance
@@ -844,7 +882,7 @@ toolbox/
                         (synthetic yawed plates), pickCarROI (click one car), simulateNight,
                         prefilterOps / applyPrefilters / suggestPrefilters (filter panel),
                         trainCharValidModel / charValidity / charsLookValid (is this region made of characters?),
-                        situationAdvice (texts of "Use recommended")
+                        readCars (car by car), nightVision (brightened copy of a dark photo), consensusText (vote over filtered copies)
 train_char_valid.m      trains the character-validity SVM and adds it to the model files (about 5 min)
 docs/                   Filter_Guide_EN.pdf, Filter_Guide_EN_MY.pdf (filter guide) and guide_source/ (HTML, pictures, build_guide.py)
 images/failures/        photos on which the system once failed (regression cases, see README.txt there)

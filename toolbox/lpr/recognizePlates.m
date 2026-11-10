@@ -1,6 +1,6 @@
-function [out, unread] = recognizePlates(img, model, varargin)
+function [out, unread, cars] = recognizePlates(img, model, varargin)
 %RECOGNIZEPLATES  Find and read ALL licence plates in a photo (road scenes).
-%   [out, unread] = RECOGNIZEPLATES(img, model, 'Name', value, ...)
+%   [out, unread, cars] = RECOGNIZEPLATES(img, model, 'Name', value, ...)
 %   Where RECOGNIZEPLATE returns only the best region, this function keeps every
 %   candidate region that the plate SVM accepts, checks that a row of characters can
 %   be cut out of it, reads each region with the character SVM and returns the plates
@@ -24,14 +24,24 @@ function [out, unread] = recognizePlates(img, model, varargin)
 %                        frame of the plate trimmed off, the brightest colour channel and a threshold sweep; a reading of 4 to 10
 %                        characters is listed with the plates (small plates are marked unreliable); only regions with a plate-SVM score of at
 %                        least 'RescueMin' (default 0.2) are tried: weaker ones were tail lights and read as junk
+%            'UnreadMin' lowest plate-SVM score of a grey "plate-like region not read" (default 0; it was -0.3 until round 12, which also listed tail lights
+%                        and reflectors, scores -0.3 to 0)
+%            'Consensus' false (default) | true: every plate read is read again in 3 filtered copies of its crop and the characters vote (CONSENSUSTEXT)
 %            'SecondLook' false (default) | true: small plates (under 90 px) and the best 4 unread plate-like regions are searched and read again in an
 %                        enlarged (plate about 200 px wide) and sharpened copy of their surroundings; at most 'MaxSecond' (6) regions. Measured on 13 real plates
 %                        of hard photos: mean character accuracy 56.7 -> 57.8 %, exact plates 2 -> 2, time per photo 58 -> 135 s: not worth it, so it is off.
+%            'Cars'      false (default) | true: car by car. A car region is cut out around every plate that was read, every plate-like region and every
+%                        pair of red tail lights (READCARS); the cars that still have no plate are enlarged and searched one by one with a lenient plate
+%                        score, so that a plate the whole-photo search missed can still be read. The third output cars lists the car regions
+%            'NightVision' false (default) | true: a night-vision copy of a dark photo (NIGHTVISION: illumination removed, shadows lifted, noise reduced)
+%                        is searched as well, next to the exposure-repaired and the equalised copies
 %            'ROI'       [x y w h]: search only this part of the photo (boxes are returned in full-photo coordinates)
 %   out is a struct array (empty if nothing was found) with the fields
 %     box [x y w h] in the photo   text   conf (mean vote share)   score (plate SVM)
 %     width (pixels)   reliable (width >= 90 px: smaller plates are read unreliably)
 %     lines (1 or 2)   charH (height of the characters in pixels)
+%     chars (the 32 x 32 character images the SVM read, in reading order)   charBoxes ([x y w h] of the characters in segPlate)
+%     segPlate (the plate cut out and resized to 100 rows, grey)
 %   unread (second output) lists plate-like regions that could not be read (too small, blurred, glare): struct array
 %   with box, score (plate SVM, at least -0.3) and width. On the 16 held-out test photos regions with a score >= -0.3
 %   contained the plate in 14 of 16 photos, even when the photos were shrunk to 40 %, with about 1 false region per photo.
@@ -50,22 +60,30 @@ p.addParameter('SmallPlates', true);
 p.addParameter('Rescue', true);
 p.addParameter('RescueMin', 0.2);
 p.addParameter('SecondLook', false);
+p.addParameter('UnreadMin', 0);
+p.addParameter('Consensus', false);
 p.addParameter('MaxSecond', 6);
+p.addParameter('Cars', false);
+p.addParameter('NightVision', false);
 p.parse(varargin{:});
 o = p.Results;
 if ~isfield(model, 'plate') || isempty(model.plate)
     error('recognizePlates:model', 'This model has no plate SVM. Use models/lpr_svm_model_real.mat (train_real_model).');
 end
 unread = struct('box', {}, 'score', {}, 'width', {});
+cars = struct('box', {}, 'plate', {}, 'source', {});
 img = toDouble(img);
+img00 = img;
 if ~isempty(o.ROI)                                         % one car (or area) chosen: search inside it only
     [H, W, ~] = size(img);
     x0 = max(1, round(o.ROI(1)));  y0 = max(1, round(o.ROI(2)));
     x1 = min(W, x0 + round(o.ROI(3)) - 1);  y1 = min(H, y0 + round(o.ROI(4)) - 1);
-    [out, unread] = recognizePlates(img(y0:y1, x0:x1, :), model, 'MaxPlates', o.MaxPlates, 'MinScore', o.MinScore, ...
-                          'MinChars', o.MinChars, 'Exposure', o.Exposure, 'NightSearch', o.NightSearch, 'Split', o.Split, 'TwoLine', o.TwoLine, 'Rescue', o.Rescue, 'RescueMin', o.RescueMin, 'SmallPlates', o.SmallPlates);
+    [out, unread, cars] = recognizePlates(img(y0:y1, x0:x1, :), model, 'MaxPlates', o.MaxPlates, 'MinScore', o.MinScore, ...
+                          'MinChars', o.MinChars, 'UnreadMin', o.UnreadMin, 'Exposure', o.Exposure, 'NightSearch', o.NightSearch, 'Split', o.Split, 'TwoLine', o.TwoLine, 'Rescue', o.Rescue, 'RescueMin', o.RescueMin, 'SmallPlates', o.SmallPlates, 'Consensus', o.Consensus, ...
+                          'Cars', o.Cars, 'NightVision', o.NightVision);
     for k = 1:numel(out), out(k).box = out(k).box + [x0 - 1, y0 - 1, 0, 0]; end
     for k = 1:numel(unread), unread(k).box = unread(k).box + [x0 - 1, y0 - 1, 0, 0]; end
+    for k = 1:numel(cars), cars(k).box = cars(k).box + [x0 - 1, y0 - 1, 0, 0]; end
     return
 end
 img0 = [];                                                 % the photo before the exposure repair (searched too)
@@ -75,13 +93,12 @@ if strcmpi(o.Exposure, 'auto')
     if ~expInfo.applied, img0 = []; end
 end
 
-out = struct('box', {}, 'text', {}, 'conf', {}, 'score', {}, 'width', {}, 'reliable', {}, 'lines', {}, 'charH', {});
+out = struct('box', {}, 'text', {}, 'conf', {}, 'score', {}, 'width', {}, 'reliable', {}, 'lines', {}, 'charH', {}, 'chars', {}, 'charBoxes', {}, 'segPlate', {});
 [isCrop, seg] = isPlateCloseup(img);                       % the photo itself is a plate close-up
 if isCrop
     res = recognizePlate(img, model, 'Exposure', 'off');
     if res.found
-        out(1) = struct('box', [1 1 size(img, 2) size(img, 1)], 'text', res.text, 'conf', mean(res.conf), 'score', Inf, ...
-                        'width', size(img, 2), 'reliable', true, 'lines', 1, 'charH', 0);
+        out(1) = plateOut([1 1 size(img, 2) size(img, 1)], res, Inf, size(img, 2), true, 1, 0);
     end
     return
 end
@@ -90,6 +107,7 @@ cmodel = [];
 if isfield(model, 'charValid'), cmodel = model.charValid; end            % streaks / blobs do not count as characters
 extra = {};
 if ~isempty(img0) && o.NightSearch, extra = {localHistEqualize(img0, 8, 3)}; end   % dark photo: also search an equalised copy
+if o.NightVision, extra{end+1} = nightVision(img00); end                            % night-vision copy (illumination removed, shadows lifted)
 [~, ~, dbg] = detectPlate(img, 'PlateModel', model.plate, 'TopK', 40, 'VerifyTop', 15, 'Original', img0, 'Extra', extra, 'CharModel', cmodel, 'Split', o.Split, ...
                        'ChainWidths', [960 1440 2000], 'ChainOffsets', [0.05 0.15]);   % every region is read, so more candidates cannot push a plate out
 cand = dbg.all;
@@ -122,20 +140,20 @@ for i = 1:numel(cand)
     if isfield(dbg, 'versions') && isfield(cand, 'src') && cand(i).src <= numel(dbg.versions), src = dbg.versions{cand(i).src}; end
     res = recognizePlate(img, model, 'Plate', src(r, c, :), 'Exposure', 'off', 'Split', o.Split);
     if ~res.found || numel(res.text) < o.MinChars, continue; end
-    out(end+1) = struct('box', [c(1), r(1), numel(c), numel(r)], 'text', res.text, ...
-        'conf', mean(res.conf), 'score', cand(i).svm, 'width', numel(c), 'reliable', numel(c) >= 90, ...
-        'lines', 1, 'charH', rowCharHeight(res, numel(r))); %#ok<AGROW>
+    out(end+1) = plateOut([c(1), r(1), numel(c), numel(r)], res, cand(i).svm, numel(c), numel(c) >= 90, 1, rowCharHeight(res, numel(r))); %#ok<AGROW>
 end
 if o.TwoLine, out = addSecondRows(out, img, model); end
 out = dropNested(out);
+out = out(~arrayfun(@(q) isOverlayBox(img00, q.box), out));      % a caption of a graphic ("CAR 1, TOYOTA" in a flat black box) is no plate
 
 % plate-like regions that could not be read: plate-SVM score >= -0.3, not overlapping a plate that was read
 cand2 = allCand;
 [~, o2] = sort([cand2.svm], 'descend');
 for i = o2(:).'
-    if cand2(i).svm < -0.3 || numel(unread) >= 6, break; end
+    if cand2(i).svm < o.UnreadMin || numel(unread) >= 6, break; end
     b = cand2(i).box;
     if b(3) < 16 || b(3) > 0.9 * size(img, 2), continue; end
+    if looksLikeLamp(img, b) || isOverlayBox(img00, b), continue; end      % tail lights, head lights and captions are not plates: no grey box for them
     over = false;
     for k = 1:numel(out), if boxIou(b, out(k).box) > 0.2 || boxShare(b, out(k).box) > 0.5, over = true; break; end, end   % a region around or inside a read plate is that plate
     for k = 1:numel(unread), if boxIou(b, unread(k).box) > 0.2, over = true; break; end, end
@@ -149,8 +167,7 @@ if o.Rescue && ~isempty(unread)
         if unread(i).score < o.RescueMin, continue; end                 % weaker regions are tail lights, grilles, stripes: reading them gives junk
         [res, bx] = rescueRead(img, model, unread(i).box);
         if isempty(res), continue; end
-        out(end+1) = struct('box', bx, 'text', res.text, 'conf', mean(res.conf), 'score', unread(i).score, 'width', round(bx(3)), ...
-                            'reliable', bx(3) >= 90, 'lines', 1, 'charH', rowCharHeight(res, bx(4))); %#ok<AGROW>
+        out(end+1) = plateOut(bx, res, unread(i).score, round(bx(3)), bx(3) >= 90, 1, rowCharHeight(res, bx(4))); %#ok<AGROW>
         keepU(i) = false;
     end
     unread = unread(keepU);
@@ -162,6 +179,41 @@ if o.SecondLook
     [out, unread] = secondLook(img, model, out, unread, o);
     out = dropNested(out);
 end
+
+% car by car: a car region around every plate and every pair of tail lights; the cars without a plate are enlarged and searched one by one
+if o.Cars
+    len = zeros(0, 4);                                         % weaker plate-like regions (score -1.2 to 0) that were not read: each may be a car whose plate is small
+    [~, o3] = sort([allCand.svm], 'descend');
+    for i = o3(:).'
+        b = allCand(i).box;
+        if allCand(i).svm < o.MinScore || size(len, 1) >= 4, break; end
+        if b(3) < 16 || b(3) > 0.9 * size(img, 2) || looksLikeLamp(img, b), continue; end
+        over = false;
+        for k = 1:numel(out), if boxShare(b, out(k).box) > 0.5, over = true; break; end, end
+        for k = 1:numel(unread), if boxShare(b, unread(k).box) > 0.5, over = true; break; end, end
+        for k = 1:size(len, 1), if boxIou(b, len(k, :)) > 0.2, over = true; break; end, end
+        if ~over, len(end+1, :) = b; end %#ok<AGROW>
+    end
+    o.Lenient = len;
+    [out, unread, cars] = readCars(img, model, out, unread, o);
+end
+
+% consensus: every plate is read in 3 filtered copies of its crop and the characters vote (CONSENSUSTEXT)
+if o.Consensus
+    for k = 1:numel(out)
+        if out(k).lines > 1, continue; end
+        t = consensusText(img00, out(k).box, out(k).text, model);
+        if numel(t) ~= numel(out(k).text), out(k).chars = {}; end       % the characters shown belong to the reading without the vote
+        out(k).text = t;
+    end
+end
+end
+
+function s = plateOut(box, res, score, width, reliable, lines, charH)
+% one entry of the list of plates: the reading, where it is, and what the SVM saw (the characters, for the display)
+segPlate = [];  if ~isempty(res.segDebug) && isfield(res.segDebug, 'plate'), segPlate = res.segDebug.plate; end
+s = struct('box', box, 'text', res.text, 'conf', mean(res.conf), 'score', score, 'width', width, 'reliable', reliable, 'lines', lines, ...
+           'charH', charH, 'chars', {res.chars}, 'charBoxes', res.boxes, 'segPlate', segPlate);
 end
 
 function [best, box] = rescueRead(img, model, b)
@@ -191,7 +243,7 @@ end
 end
 
 function [out, unread] = secondLook(img, model, out, unread, o)
-% The situation "Small or far plate" (enlarge 2 times + unsharp masking) read 10 of 13 real plates of a hard test set where
+% The filter chain "enlarge 2 times + unsharp masking" read 10 of 13 real plates of a hard test set where
 % no filter read 5. Here the same is done automatically, but only around the plates that need it: every small plate (under 90 px)
 % and the best plate-like regions that could not be read. The surroundings (3.4 x 6 plate sizes) are enlarged so that the plate
 % is about 200 px wide, sharpened, and searched and read again; a new reading replaces a small one that has fewer characters.
@@ -222,12 +274,38 @@ for t = 1:size(tg, 1)
         out(who(t)).text = r.text;  out(who(t)).conf = mean(r.conf);  out(who(t)).box = nb;  out(who(t)).width = round(nb(3));
         out(who(t)).reliable = nb(3) >= 90;
     else
-        out(end+1) = struct('box', nb, 'text', r.text, 'conf', mean(r.conf), 'score', unread(who(t)).score, 'width', round(nb(3)), ...
-                            'reliable', nb(3) >= 90, 'lines', 1, 'charH', rowCharHeight(r, nb(4) * k)); %#ok<AGROW>
+        out(end+1) = plateOut(nb, r, unread(who(t)).score, round(nb(3)), nb(3) >= 90, 1, rowCharHeight(r, nb(4) * k)); %#ok<AGROW>
         dropU(who(t)) = true;
     end
 end
 unread = unread(~dropU);
+end
+
+function yes = isOverlayBox(img, b)
+% text drawn into a graphic (a caption in a flat black box): more than 40 % of the pixels equal the median level (+-0.012) and that level is black.
+% Measured: the four captions of a traffic graphic 0.46 to 0.59 flat at level 0.05; real plates 0.01 to 0.11 (493 plates of the project photos: 0 with both properties).
+[H, W, ~] = size(img);
+r = max(1, round(b(2))):min(H, round(b(2) + b(4) - 1));  c = max(1, round(b(1))):min(W, round(b(1) + b(3) - 1));
+yes = false;
+if numel(r) < 4 || numel(c) < 8, return; end
+Y = toGray(img(r, c, :));
+m = median(Y(:));
+yes = m < 0.12 && mean(abs(Y(:) - m) < 0.012) > 0.4;
+end
+
+function yes = looksLikeLamp(img, b)
+% a glowing red / orange or white blob: many saturated red pixels together with a bright core (a plate lit red by a tail light has
+% a darker, less saturated background and dark characters)
+[H, W, C] = size(img);
+r = max(1, round(b(2))):min(H, round(b(2) + b(4) - 1));  c = max(1, round(b(1))):min(W, round(b(1) + b(3) - 1));
+yes = false;
+if C ~= 3 || numel(r) < 4 || numel(c) < 8, return; end
+if std(toGray(img(r, c, :)), 0, 'all') < 0.04, yes = true;  return; end     % a blank patch (black sky, a plain wall) is not a plate either
+hsv = rgb2hsv(img(r, c, :));
+red = (hsv(:,:,1) < 0.07 | hsv(:,:,1) > 0.93) & hsv(:,:,2) > 0.5 & hsv(:,:,3) > 0.55;
+bright = hsv(:,:,3) > 0.9;
+dark = hsv(:,:,3) < 0.3;
+yes = (mean(red(:)) > 0.35 && mean(bright(:)) > 0.15) || (mean(bright(:)) > 0.6 && mean(dark(:)) < 0.02);
 end
 
 function h = rowCharHeight(res, cropH)
@@ -266,6 +344,7 @@ for k = 1:numel(out)
         x1 = max(b(1) + b(3), rowBox(1) + rowBox(3));  y1 = max(b(2) + b(4), rowBox(2) + rowBox(4));
         out(k).box = [x0, y0, x1 - x0, y1 - y0];  out(k).text = txt;  out(k).lines = 2;  out(k).width = round(x1 - x0);
         out(k).conf = mean([out(k).conf, mean(res.conf)]);
+        if dirn > 0, out(k).chars = [out(k).chars, res.chars]; else, out(k).chars = [res.chars, out(k).chars]; end   % the characters of both rows, upper row first
         out(k).reliable = out(k).width >= 90;
         break
     end

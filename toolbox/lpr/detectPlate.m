@@ -492,13 +492,13 @@ c.verify = v;  c.nChars = n;  c.src = src;
 end
 
 function [n, v] = countChars(crop, minChars, cv, split)
-[ch, ~, ~, v] = segmentPlateBest(crop, 'Mode', 'fast', 'Split', split, 'MinChars', minChars, 'Rescue', 'light');
+[ch, bx, ~, v] = segmentPlateBest(crop, 'Mode', 'fast', 'Split', split, 'MinChars', minChars, 'Rescue', 'light');
 n = numel(ch);
-if n >= 1 && ~charsLookValid(cv, ch), n = 0;  v = 0; end
+if n >= 1 && ~charsLookValid(cv, ch, bx), n = 0;  v = 0; end
 if n < minChars                                              % a tilted plate may need the tilt search
-    [ch2, ~, ~, v2] = segmentPlateBest(crop, 'Mode', 'full', 'Split', split, 'MinChars', minChars, 'Rescue', 'light');
+    [ch2, bx2, ~, v2] = segmentPlateBest(crop, 'Mode', 'full', 'Split', split, 'MinChars', minChars, 'Rescue', 'light');
     n2 = numel(ch2);
-    if n2 >= 1 && ~charsLookValid(cv, ch2), n2 = 0;  v2 = 0; end
+    if n2 >= 1 && ~charsLookValid(cv, ch2, bx2), n2 = 0;  v2 = 0; end
     if n2 > n, n = n2;  v = v2; end
 end
 end

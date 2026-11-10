@@ -409,9 +409,12 @@ cbG = findall(appG.fig, 'Type', 'uicheckbox');
 check('GUI: the situation chooser and "Use recommended" are gone; no "Filter guide" button, no Myanmar text; "Enlarge text" is there', ...
       ~any(arrayfun(@(d) any(contains(string(d.Items), 'Small or far plate')), ddG)) && ~any(arrayfun(@(b) strcmp(b.Text, 'Use recommended'), btnG)) && ...
       ~any(arrayfun(@(b) contains(b.Text, 'guide', 'IgnoreCase', true), btnG)) && any(arrayfun(@(b) strcmp(b.Text, 'Enlarge text'), btnG)));
-check('GUI plate tab: "Find ALL plates" and "Car by car" are ticked by default, "Night vision" is there (not ticked), and a "Show plate" list', ...
-      any(arrayfun(@(c) startsWith(c.Text, 'Find ALL') && c.Value, cbG)) && any(arrayfun(@(c) startsWith(c.Text, 'Car by car') && c.Value, cbG)) && ...
-      any(arrayfun(@(c) startsWith(c.Text, 'Night vision') && ~c.Value, cbG)) && any(arrayfun(@(d) any(strcmp(d.Items, '-')), ddG)));
+sbG = findall(appG.fig, 'Type', 'uistatebutton');
+check('GUI plate tab: "Find ALL plates" is ticked by default, "Night vision" is there (not ticked), a "Show plate" list, a "Crop" button with Clear / Remove / Copy; no "Car by car" box and no "Pick vehicle" button', ...
+      any(arrayfun(@(c) startsWith(c.Text, 'Find ALL') && c.Value, cbG)) && any(arrayfun(@(c) startsWith(c.Text, 'Night vision') && ~c.Value, cbG)) && ...
+      any(arrayfun(@(d) any(strcmp(d.Items, '-')), ddG)) && any(arrayfun(@(b) strcmp(b.Text, 'Crop') && ~b.Value, sbG)) && ...
+      all(ismember({'Clear crops', 'Remove', 'Copy'}, arrayfun(@(b) string(b.Text), btnG))) && ...
+      ~any(arrayfun(@(c) startsWith(c.Text, 'Car by car'), cbG)) && ~any(arrayfun(@(b) contains(b.Text, 'Pick vehicle'), btnG)));
 cbAll = cbG(arrayfun(@(c) startsWith(c.Text, 'Find ALL'), cbG));
 appG.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate');
 appG.previewFilters();
@@ -463,6 +466,22 @@ if exist(finalModel, 'file') && exist('plV', 'var')                     % Find A
           ~isempty(stG.plates) && ~isempty(stG.plates(1).chars) && ~isempty(stG.plates(1).segPlate) && ...
           any(arrayfun(@(t) contains(string(t.String), stG.plates(1).text), txtG)) && numel(imgG) >= 3);
     appG.showPlate(1);
+    nBefore = numel(stG.plates);
+    appG.cropDrag([100 90], [330 230]);                                      % the crop tool: drag a rectangle around the plate (same steps as the mouse)
+    stG = appG.state();
+    check('GUI crop tool: dragging a rectangle stores the crop, reads the plate in it and keeps one entry for the plate seen before (no duplicate)', ...
+          size(stG.crops, 1) == 1 && isequal(stG.crops(1, :), [100 90 230 140]) && numel(stG.plates) == nBefore && ~isempty(stG.plates));
+    appG.cropDrag([5 5], [12 9]);                                            % a tiny rectangle is ignored
+    stG = appG.state();
+    check('GUI crop tool: a rectangle smaller than 24 x 16 pixels is ignored', size(stG.crops, 1) == 1);
+    imgB = findall(appG.fig, 'Type', 'image');
+    imgB = imgB(arrayfun(@(i) ~isempty(i.ButtonDownFcn), imgB));            % the gallery picture: a click on the first tile chooses plate 1
+    okClick = ~isempty(imgB);
+    if okClick, imgB(1).ButtonDownFcn(imgB(1), struct('IntersectionPoint', [40 50 0])); end
+    check('GUI gallery: a click on a tile runs without error and chooses that plate', okClick);
+    appG.removePlate();
+    stG = appG.state();
+    check('GUI: "Remove" deletes the chosen reading from the list', numel(stG.plates) == nBefore - 1);
 end
 close(appG.fig);
 
@@ -505,6 +524,12 @@ if exist(finalModel, 'file')
     check('recognizePlates option "Cars": a third output lists the car regions (box, plate, source), the car of a plate that was read points to it, plates carry the characters the SVM saw', ...
           isstruct(cC) && all(ismember({'box', 'plate', 'source'}, fieldnames(cC))) && ~isempty(oC) && ~isempty(cC) && cC(1).plate == 1 && ...
           all(ismember({'chars', 'charBoxes', 'segPlate'}, fieldnames(oC))) && ~isempty(oC(1).chars));
+    [oR, ~, iR] = readCrop(min(max(scC, 0), 1), F4.model, [60 60 300 180]);                % the crop tool: a rectangle around the plate
+    check('readCrop: reads the plate inside a crop, returns its box in pixels of the ORIGINAL photo (inside the crop) and the enlargement', ...
+          ~isempty(oR) && all(ismember({'chars', 'charBoxes', 'segPlate'}, fieldnames(oR))) && iR.scale >= 1 && ...
+          oR(1).box(1) >= 60 && oR(1).box(2) >= 60 && oR(1).box(1) + oR(1).box(3) <= 361 && abs(oR(1).box(1) + oR(1).box(3) / 2 - (130 + size(pgC, 2) / 2)) < 20);
+    oT = readCrop(min(max(scC, 0), 1), F4.model, [5 5 10 6]);
+    check('readCrop: a rectangle smaller than 20 x 12 pixels gives an empty result', isempty(oT));
     check('the character SVM of the final model uses signed HOG features (model.hog) and the older models still work without that field', ...
           isfield(F4.model, 'hog') && F4.model.hog.signed && size(F4.model.svm.SV, 2) == 648 && ~isfield(load(fullfile('models', 'lpr_svm_model.mat'), 'model').model, 'hog'));
     plS = imResize(plV, 90 / size(plV, 2), 'bilinear');                  % a plate only 90 px wide

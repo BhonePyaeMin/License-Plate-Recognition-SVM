@@ -35,6 +35,8 @@ function [out, unread, cars] = recognizePlates(img, model, varargin)
 %                        score, so that a plate the whole-photo search missed can still be read. The third output cars lists the car regions
 %            'NightVision' false (default) | true: a night-vision copy of a dark photo (NIGHTVISION: illumination removed, shadows lifted, noise reduced)
 %                        is searched as well, next to the exposure-repaired and the equalised copies
+%            'ChainWidths' [960 1440 2000] (default): the widths (pixels) of the copies of the photo in which rows of characters are searched; a smaller list
+%                        is faster (READCROP uses two widths, because its crop is enlarged already)
 %            'ROI'       [x y w h]: search only this part of the photo (boxes are returned in full-photo coordinates)
 %   out is a struct array (empty if nothing was found) with the fields
 %     box [x y w h] in the photo   text   conf (mean vote share)   score (plate SVM)
@@ -65,6 +67,7 @@ p.addParameter('Consensus', false);
 p.addParameter('MaxSecond', 6);
 p.addParameter('Cars', false);
 p.addParameter('NightVision', false);
+p.addParameter('ChainWidths', [960 1440 2000]);
 p.parse(varargin{:});
 o = p.Results;
 if ~isfield(model, 'plate') || isempty(model.plate)
@@ -80,7 +83,7 @@ if ~isempty(o.ROI)                                         % one car (or area) c
     x1 = min(W, x0 + round(o.ROI(3)) - 1);  y1 = min(H, y0 + round(o.ROI(4)) - 1);
     [out, unread, cars] = recognizePlates(img(y0:y1, x0:x1, :), model, 'MaxPlates', o.MaxPlates, 'MinScore', o.MinScore, ...
                           'MinChars', o.MinChars, 'UnreadMin', o.UnreadMin, 'Exposure', o.Exposure, 'NightSearch', o.NightSearch, 'Split', o.Split, 'TwoLine', o.TwoLine, 'Rescue', o.Rescue, 'RescueMin', o.RescueMin, 'SmallPlates', o.SmallPlates, 'Consensus', o.Consensus, ...
-                          'Cars', o.Cars, 'NightVision', o.NightVision);
+                          'Cars', o.Cars, 'NightVision', o.NightVision, 'ChainWidths', o.ChainWidths);
     for k = 1:numel(out), out(k).box = out(k).box + [x0 - 1, y0 - 1, 0, 0]; end
     for k = 1:numel(unread), unread(k).box = unread(k).box + [x0 - 1, y0 - 1, 0, 0]; end
     for k = 1:numel(cars), cars(k).box = cars(k).box + [x0 - 1, y0 - 1, 0, 0]; end
@@ -109,7 +112,7 @@ extra = {};
 if ~isempty(img0) && o.NightSearch, extra = {localHistEqualize(img0, 8, 3)}; end   % dark photo: also search an equalised copy
 if o.NightVision, extra{end+1} = nightVision(img00); end                            % night-vision copy (illumination removed, shadows lifted)
 [~, ~, dbg] = detectPlate(img, 'PlateModel', model.plate, 'TopK', 40, 'VerifyTop', 15, 'Original', img0, 'Extra', extra, 'CharModel', cmodel, 'Split', o.Split, ...
-                       'ChainWidths', [960 1440 2000], 'ChainOffsets', [0.05 0.15]);   % every region is read, so more candidates cannot push a plate out
+                       'ChainWidths', o.ChainWidths, 'ChainOffsets', [0.05 0.15]);   % every region is read, so more candidates cannot push a plate out
 cand = dbg.all;
 if o.SmallPlates                                           % second search, only for small plates: its windows must not push the others out of the check
     [~, ~, dbg2] = detectPlate(img, 'PlateModel', model.plate, 'TopK', 40, 'VerifyTop', 15, 'Original', img0, 'Extra', extra, 'CharModel', cmodel, ...

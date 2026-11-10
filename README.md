@@ -36,18 +36,15 @@ from scratch in `toolbox/`.
    * **Real car photo** loads the real photographs of the project one after the other
      (the true plate is shown after recognition). **Open image…** loads your own photo,
      **Synthetic car photo** generates a test scene.
-   * Tab **4 Plate** → **Find ALL plates** (ticked from round 13 on) searches a road scene with many cars (every accepted region gets a
-     box and a reading, the **number is written above its box**; orange boxes = plate too small to read reliably) → **Recognise plate**. **Car by car**
-     (ticked) also cuts every car out (blue dotted frames) and searches the cars whose plate was missed; **Night vision** (not ticked) also searches a brightened copy of a dark
-     photo. The detected plate is outlined, the segmented characters ("Result"; **Show plate** chooses which plate when there are several) and the 32×32 images given to the SVM
-     (the gallery under the photo: number above, car or plate in the middle, SVM characters below) are shown, the text appears in large
+   * Tab **4 Plate** has three steps. **1 Whole photo:** **Recognise plate** searches the whole photo; **Find ALL plates** (ticked) reads every plate of a road scene (every accepted region gets a
+     box and a reading, the **number is written above its box**; orange boxes = plate too small to read reliably), unticked it reads only the best plate; **Night vision** (not ticked) also searches a brightened copy of a dark photo.
+     **2 Crop one car (like a photo crop):** press **Crop**, then **drag a rectangle** on the photo around ONE car or plate: the outside is dimmed, the frame has handles and thirds and shows its size in pixels.
+     When you let go, the crop is cut out, enlarged (up to 4 times) and every plate in it is read; the plates join the list (a plate seen before is not listed twice). Drag again for the next car; **Clear crops** removes the
+     blue frames. **3 Plates found:** **Show plate** (or a click on a picture of the gallery) chooses the plate whose characters are shown in "Result" and whose box gets a thick frame; **Remove** deletes a wrong reading (a sign, a lamp);
+     **Copy** puts all numbers on the clipboard. The segmented characters ("Result") and the 32×32 images given to the SVM (the gallery under the photo: number above, the plate with its surroundings in the middle, SVM characters below) are shown, the text appears in large
      letters. If you know the plate layout, type it (`L` = letter, `D` = digit, space = gap,
      e.g. `LLL DDDD`): this removes O/0, I/1, B/8 confusions. **Show pipeline stages** opens
-     a figure with every step.
-   * **Pick vehicle...** (tab 4): a separate window opens with your photo; click two opposite corners around
-     **one car** (Enter = cancel). Only that part of the photo is searched, so you get one plate from the car
-     you choose, not a sign or another car. **Whole photo** goes back to searching everything. If the plate is
-     narrower than 90 px the app says "plate located but too small to read" (dashed orange box) and shows no text.
+     a figure with every step. (The old "Car by car" box and the separate "Pick vehicle..." window of rounds 5 to 13 are gone; the crop tool replaces both. `readCars` and `pickCarROI` stay as functions for scripts.)
    * When nothing is found the message says why (e.g. "only 3 characters", "no region with enough characters",
      "plate score too low", "plate too small (54 px)").
    * **Pre-filter panel (right side of the window).** For photos that are noisy, dark, flat, blurry or unevenly
@@ -92,7 +89,7 @@ from scratch in `toolbox/`.
    | `demo_lpr('your.jpg','','pick')` | you click two corners around ONE car first (`pickCarROI`); only that car is searched |
    | `markPlateBoxes` | for every new photo in `images/real`: click the plate corners, type the plate text; appends to `plate_boxes.csv` and `labels.csv` (note `night`) |
    | `demo_modules` | runs all three modules on one image, saves comparison figures to `results/` |
-   | `run_tests` | 119 self-checks for every module and the recogniser |
+   | `run_tests` | 125 self-checks for every module and the recogniser |
    | `recognizePlates(img, model)` | finds and reads **all** plates of a photo (struct array: box, text, conf, score, width, reliable) |
    | `train_lpr_model` | (re)trains the synthetic character SVMs (`models/lpr_svm_model*.mat`) |
    | `train_real_model` | trains the plate SVM and the character SVM with the real photos, prints the held-out result (`train_real_model('plate')` retrains only the plate SVMs, ~3 min; `train_real_model('chars')` only the character SVMs, 1 min + the held-out test) |
@@ -726,6 +723,23 @@ What the five screenshots showed and what was changed:
 `SLJ43E2C` (Singapore) wrong by one to three characters; Honda, `B178PC178`, `SLJ6473J` not read; Skoda `ZMHJEECF7` (true `MH20EE0943`). That is 3 of 10 plates exact, 55 % of the characters, 46 s per photo. A guarantee of correct numbers for every plate is not possible with this reader:
 on held-out photos of the same kinds as the training photos it reads about 55 % of the plates exactly, on photos of designs it has not seen far fewer (README rounds 8 to 11). What improves it is more labelled photos of the plates you care about (the 470-photo Indian sample of round 10 is waiting for you to download it).
 
+### 5a''''''''''''''''. Round 14: a crop tool like a photo editor replaces "Car by car" and "Pick vehicle" (2026-11-10)
+
+What you asked for (screenshot of the two Nissans: "I want a crop feature like photo crop that can detect and recognise each car's plate; I do not understand the pick-up-car design; make it modern and useful and get correct numbers"):
+* **The "Car by car" tick box, the "Vehicle: whole photo / Pick vehicle... / Whole photo" row and the blue dotted car frames are gone.** "Pick vehicle..." opened a separate window in which you had to click two corners, and "Car by car" guessed cars from tail lights; neither was understandable. `readCars` and `pickCarROI` stay as functions for scripts, the GUI does not use them.
+* **The Plate tab has three numbered steps** (blue headings, one big blue "Recognise plate" button): **1 Whole photo** (Recognise plate, Find ALL plates, Night vision, Vote), **2 Crop one car (like a photo crop)** (a **Crop** button with an icon, **Clear crops**, a one-line hint), **3 Plates found** (the "Show plate" list, **Remove**, **Copy**, the big number). Plate layout and character colour moved to "Options" at the bottom.
+* **Crop tool.** Press **Crop**, then **drag a rectangle on the photo** (top left picture, which is now the wider column). While you drag, everything outside the rectangle is dimmed, the frame has eight handles and rule-of-thirds guides, and a label shows its size in pixels (`310 x 270 px`).
+  When you let go, the crop is cut out, enlarged (small crops up to 4 times, to about 700 px on the long side) and **every plate inside it is read at once** (`readCrop`: `recognizePlates` with two working widths and without the small-plate pass, because the crop is enlarged already; it falls back to a lenient single search when it finds nothing).
+  The plates join the list (a plate that was found before is not listed twice: the reading with the higher vote confidence is kept), their boxes are drawn on the photo with the number above, the crop gets a blue dashed frame ("crop 1"). A crop in which nothing can be read is shown in "Result" and the message says why. Drag again for the next car. A rectangle smaller than 24 x 16 pixels is ignored.
+* **Other changes.** A click on a picture of the gallery chooses that plate (its box gets a thick frame); **Remove** deletes a wrong reading (for example the green sign `World-C...` that Find ALL listed as `WQK18C4`); **Copy** puts all numbers on the clipboard. The gallery tile now shows the plate with its surroundings (about 3 plate widths). The empty "Result" picture no longer shows axis numbers, the text box at the bottom left is taller. `recognizePlates` got the option `ChainWidths`.
+* **Speed.** The first version of the crop reading used the whole-photo settings and took 168 s for the right Nissan; with two working widths, no small-plate pass and 700 px instead of 900 px it takes **37 s** and reads the same plate (`W35AZL`). A crop in which nothing is found still costs 90 to 120 s (the lenient search).
+* **Measured readings of crops (installed model, crops dragged by script):** Nissan right car (310 x 270 px) -> `W35AZL` exact, 37 s; tight crop around that plate -> `W35AZL`, 22 s. Skoda right car (505 x 400 px) -> **`MH20EE0943` exact** (Find ALL on the whole photo gives `MR20EE0943`), 36 s; tight crop of its plate -> `MH20EE0943`, 31 s.
+  Not read in any crop: the left Nissan plate `W36AZL` (33 px wide: the pixels are not there, enlarging only makes a bigger blur) and the red plate `MH20TC744A` (Find ALL gives the wrong `WNTC1M4`, the crop gives nothing).
+* **Does cropping make the numbers more correct? Not on average.** I placed rectangles from the TRUE plate boxes of your 15 plates (the user's job in the GUI) and read them with `readCrop`: **car-sized crops (5.2 x 4.4 plate widths): 2 of 15 exact, 10 plates read, 53.3 % of the characters; plate-zone crops (2.2 x 1.8 plate widths): 3 of 15 exact, 11 read, 54.3 %; Find ALL on the whole photo: 4 of 15 exact, 11 read, 56.2 %.**
+  The three numbers are within the noise of a 15-plate sample, and the reading changes with the rectangle: `W35AZL` became `35AZL` when the crop was shifted by one or two pixels, the taxi `KA53C6932` is exact in the car crop and `VA53C699` in the plate-zone crop. So a crop is a way to **aim at one car** (a plate that Find ALL missed, a car you want to see alone, a smaller photo area, a faster search: 15 to 50 s instead of 1 to 4 minutes), not a way to get more correct characters. What decides the correctness is still the blur of 8 to 14 px characters.
+* **Not checked with a physical mouse.** The drag frame, the crop, the merge into the list, the click on the gallery and Remove were run by script through the same functions the mouse callbacks call (`app.cropDrag`, `app.cropRead`) and screenshots were taken; the mouse hooks (`WindowButtonDownFcn`, `WindowButtonMotionFcn`, `WindowButtonUpFcn` of the figure and `CurrentPoint` of the axes) are the standard way in MATLAB figures but I could not click with your mouse.
+* `run_tests`: 125 self-checks (the old "Car by car" check was replaced; new: the Crop / Clear / Remove / Copy controls, `readCrop` returns boxes of the original photo, a tiny rectangle is ignored, the GUI crop is merged without a duplicate, a click on the gallery, Remove).
+
 ### 5a'''''''''''''''. Screenshots of round 13: merged characters, numbers above the plates, car by car, night vision (2026-11-10)
 
 What the screenshots showed and what was changed:
@@ -866,7 +880,7 @@ depends strongly on the font (exact-plate rate on the four held-out fonts ≈ 64
 ```
 LPR_Toolbox.m           GUI                      train_lpr_model.m   synthetic character SVMs
 demo_lpr.m              recognise one image      train_real_model.m  plate SVM + real-photo SVM
-demo_modules.m          figures, all modules     run_tests.m         119 self-checks
+demo_modules.m          figures, all modules     run_tests.m         125 self-checks
 setup_toolbox.m         add folders to path
 toolbox/
   common/               toDouble, toGray, padImage, spatialFilter, gaussianKernel, showImage, imageMetrics, editDistance
@@ -879,10 +893,10 @@ toolbox/
                         binarisations, best row wins), recognizePlate, recognizePlates (all plates), normalizeExposure, makeHardNegatives, trainLPRModel, trainRealModel, collectRealChars,
                         collectPlateCandidates, evaluateLPR, evaluateReal, makeScene, renderPlate,
                         augmentGlyph, showPipeline, rectifyPlate (perspective correction), evaluateYaw
-                        (synthetic yawed plates), pickCarROI (click one car), simulateNight,
+                        (synthetic yawed plates), pickCarROI (click one car, scripts only), simulateNight,
                         prefilterOps / applyPrefilters / suggestPrefilters (filter panel),
                         trainCharValidModel / charValidity / charsLookValid (is this region made of characters?),
-                        readCars (car by car), nightVision (brightened copy of a dark photo), consensusText (vote over filtered copies)
+                        readCrop (the crop tool of the GUI), readCars (car by car, scripts only), nightVision (brightened copy of a dark photo), consensusText (vote over filtered copies)
 train_char_valid.m      trains the character-validity SVM and adds it to the model files (about 5 min)
 docs/                   Filter_Guide_EN.pdf, Filter_Guide_EN_MY.pdf (filter guide) and guide_source/ (HTML, pictures, build_guide.py)
 images/failures/        photos on which the system once failed (regression cases, see README.txt there)

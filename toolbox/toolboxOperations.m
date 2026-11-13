@@ -85,12 +85,96 @@ L{end+1} = makeOp(3, 'Radial distortion: correct', [par('k1', -0.6, 0.6, -0.25),
     @(I,p,r) deal(radialDistortion(I, p(1), p(2), 'correct'), 'Reverse-map undistortion'));
 L{end+1} = makeOp(3, 'Image registration (features)', none, @(I,p,r) registerOp(I, r, 'features'));
 L{end+1} = makeOp(3, 'Image registration (phase corr.)', none, @(I,p,r) registerOp(I, r, 'phase'));
+
+% ====================== comparison views (one picture, several tiles) ====================
+% The Result shows the methods side by side; the GUI writes the name of every tile into the tile.
+L{end+1} = makeCmp(1, 'Compare: enhancement methods', @cmpEnhance, [3 3], ...
+    {'Original', 'Hist. equalised', 'Hist. matched', 'Gamma 0.5', 'Median 3x3', 'Gaussian 5x5', 'Laplacian sharpen', 'Low-pass', 'High-pass'});
+L{end+1} = makeCmp(2, 'Compare: edge detectors', @cmpEdges, [2 2], ...
+    {'Original (gray)', 'Sobel', 'Prewitt', 'Canny'});
+L{end+1} = makeCmp(2, 'Compare: segmentation methods', @cmpSegment, [2 3], ...
+    {'Original', 'Otsu', 'Adaptive', 'Region growing', 'White (HSV)', 'Edges + closing'});
+L{end+1} = makeCmp(3, 'Compare: geometric transforms', @cmpGeom, [3 3], ...
+    {'Original', 'Translation', 'Scaling x1.4', 'Rotation 15 deg', 'Shear 0.25', 'Affine', 'Forward (holes)', 'Reverse mapping', 'Distortion fixed'});
+L{end+1} = makeCmp(3, 'Compare: interpolation (zoom)', @cmpInterp, [2 2], ...
+    {'Original (framed)', 'Nearest', 'Bilinear', 'Bicubic'});
+
 ops = [L{:}];
+H = opHelp();
+for k = 1:numel(ops)
+    if isKey(H, ops(k).name), ops(k).help = H(ops(k).name); end
+end
 end
 
 function op = makeOp(module, name, params, fn)
-% One entry of the operation table.
-op = struct('module', module, 'name', name, 'params', {params}, 'run', fn);
+% One entry of the operation table (help = what it does and when to use it; tiles/grid only for the comparison views).
+op = struct('module', module, 'name', name, 'params', {params}, 'run', fn, 'help', '', 'tiles', {{}}, 'grid', []);
+end
+
+function op = makeCmp(module, name, fn, grid, tiles)
+% A comparison view: the function returns one picture made of grid(1) x grid(2) tiles.
+op = makeOp(module, name, struct('label', {}, 'min', {}, 'max', {}, 'default', {}), @(I,p,r) fn(I, r));
+op.tiles = tiles;  op.grid = grid;
+end
+
+function H = opHelp()
+% what every operation does and when to use it (shown in the GUI under the Apply button, and in the guideline PDF)
+c = {
+ 'Histogram equalisation',            'Spreads the grey levels over the whole range, so a flat, hazy or dark photo gets more contrast. Use it for low-contrast photos; it also lifts noise.'
+ 'Histogram matching (to reference)', 'Reshapes the grey-level histogram to look like a reference photo (Open reference...). Without a reference a brightened copy is used. Use it to give two photos the same exposure.'
+ 'Brightness / contrast',             'Linear grey-level change J = gain*(I-0.5)+0.5+offset. Raise the gain for flat photos and the offset for dark ones. Values pushed beyond black or white are lost.'
+ 'Gamma correction',                  'Power law J = I^gamma. Gamma below 1 brightens the dark areas, above 1 darkens washed-out areas. Use it for under- or over-exposed photos.'
+ 'Log transform',                     'J = log(1+a*I) expands the dark grey levels and compresses the bright ones. Use it when dark detail matters (night photos).'
+ 'Contrast stretching',               'Maps the chosen low and high percentiles to black and white and ignores a few extreme pixels. Use it for hazy or foggy photos.'
+ 'Mean filter',                       'Replaces every pixel by the average of its window. Reduces noise but blurs edges. Keep the window small (3 or 5) for grainy photos.'
+ 'Gaussian filter',                   'Weighted average with a bell-shaped window: a smoother blur than the mean filter. Use it for fine noise; sigma sets the amount of blur.'
+ 'Median filter',                     'Replaces every pixel by the median of its window. Best against salt-and-pepper dots and it keeps edges. Window 3 for few dots, 5 for many.'
+ 'Laplacian sharpening',              'Subtracts the Laplacian (second derivative) from the image, which makes edges steeper. Use it for soft photos; large amounts boost noise.'
+ 'High-pass sharpening',              'Adds a 3x3 high-pass (edge) kernel back to the image. Mild edge enhancement, similar to Laplacian sharpening.'
+ 'Unsharp masking',                   'Adds the difference between the photo and a blurred copy (high-boost filtering). The usual sharpening; an amount of 1 to 1.5 is safe.'
+ 'Frequency low-pass (Butterworth)',  'Keeps only the slow changes in the Fourier domain. Removes fine noise and screen pixel patterns; a low cut-off blurs strongly.'
+ 'Frequency high-pass (Butterworth)', 'Removes the slow changes and keeps fine detail and edges. Use it to see outlines or to flatten uneven light.'
+ 'Frequency band-pass (Gaussian)',    'Keeps the frequencies between the two cut-offs: removes slow shading and very fine noise at the same time.'
+ 'Add Gaussian noise',                'Test input: adds random grain. Apply it, press "Use result as input", then try the smoothing filters on it.'
+ 'Add salt-and-pepper noise',         'Test input: adds white and black dots. Then try the median filter, which removes them best.'
+ 'Sobel edges',                       'Edge strength from two 3x3 gradient kernels; the threshold (0 = Otsu) decides which edges are shown. Fast and simple, edges are thick.'
+ 'Prewitt edges',                     'Like Sobel but with equal weights in the kernel, so it is a little more sensitive to noise. Compare both on the same photo.'
+ 'Canny edges',                       'Smooths, finds the gradient, thins the edges and links them with two thresholds. The cleanest outline; sigma sets how much detail is kept.'
+ 'Otsu threshold',                    'Finds the grey level that best separates dark from bright pixels and makes a black-and-white picture. Use it when the light is even.'
+ 'Adaptive threshold',                'Compares every pixel with the mean of its neighbourhood, so shadows do not matter. A window of about 31 suits plates and text.'
+ 'Region growing (from centre)',      'Starts at the image centre and adds neighbours whose grey level is within the tolerance; the region is tinted red. Use it to cut out one object.'
+ 'Colour segmentation: white (HSV)',  'Keeps pixels with low saturation and high value: white plates and white bodywork.'
+ 'Colour segmentation: yellow (HSV)', 'Keeps pixels with hue 0.09 to 0.20: yellow plates.'
+ 'Colour segmentation: blue (HSV)',   'Keeps pixels with hue 0.52 to 0.72: blue plates and signs.'
+ 'Colour segmentation: red (RGB range)', 'Keeps pixels with high red and low green and blue (an RGB range): tail lights and red signs.'
+ 'Morphology: dilation',              'Grows the white regions with a disk. Joins broken characters; the radius sets the amount. Works on the Otsu-binarised image.'
+ 'Morphology: erosion',               'Shrinks the white regions and removes thin lines and small dots. Separates characters that touch.'
+ 'Morphology: opening',               'Erosion followed by dilation: removes small bright specks and keeps the size of the big shapes.'
+ 'Morphology: closing',               'Dilation followed by erosion: fills small holes and gaps inside the shapes.'
+ 'Morphology: gradient (outline)',    'Dilation minus erosion: draws the outline of the shapes.'
+ 'Shape segmentation (plate-like blobs)', 'Canny edges, closing, then a filter on aspect ratio, extent and area. Keeps the blobs that look like a licence plate.'
+ 'Translation',                       'Moves the image by dx and dy pixels (positive = right and down). The empty area is black.'
+ 'Scaling / zoom',                    'Enlarges or shrinks about the image centre by reverse mapping with bilinear interpolation.'
+ 'Rotation',                          'Turns the image about its centre; the corners are cut off. Use it to level a tilted plate.'
+ 'Rotation (full canvas)',            'The same rotation, but the canvas grows so no corner is lost.'
+ 'Shear',                             'Slants the image horizontally or vertically (an affine transform). Mimics a plate seen from the side.'
+ 'Affine (rotate + scale + shear)',   'Rotation, scaling and shear in one matrix. Straight lines stay straight and parallel lines stay parallel.'
+ 'Forward mapping (scale, shows holes)', 'Pushes every input pixel to its new place. Enlarging leaves holes: this is why reverse mapping is used.'
+ 'Reverse mapping (scale)',           'For every output pixel looks up the source position and interpolates. No holes appear.'
+ 'Resize: nearest neighbour',         'Copies the nearest pixel: fastest, blocky when enlarging.'
+ 'Resize: bilinear',                  'Averages the 4 nearest pixels: smooth, a little soft.'
+ 'Resize: bicubic',                   'Uses 16 neighbours with a cubic kernel: the sharpest of the three. Use it to enlarge a small plate.'
+ 'Radial distortion: simulate',       'Applies barrel (k1 < 0) or pincushion (k1 > 0) lens distortion, to test the correction.'
+ 'Radial distortion: correct',        'Undoes lens distortion for the given k1 and k2 by reverse mapping. Use it when straight lines look curved (wide-angle photos).'
+ 'Image registration (features)',     'Finds Harris corners in both images, matches them and fits an affine transform (RANSAC). Needs a reference image (Open reference...); without one a moved copy is made.'
+ 'Image registration (phase corr.)',  'Finds the shift between two images from the Fourier phase. Fast, but handles translation only.'
+ 'Compare: enhancement methods',      'Nine Module 1 results in one picture: histogram, smoothing, sharpening and frequency filters next to the original.'
+ 'Compare: edge detectors',           'Sobel, Prewitt and Canny edges next to the gray original, with the number of edge pixels in the log.'
+ 'Compare: segmentation methods',     'Otsu, adaptive threshold, region growing, colour (white) and edges + morphology next to the original.'
+ 'Compare: geometric transforms',     'Translation, scaling, rotation, shear, affine, forward and reverse mapping and distortion correction next to the original.'
+ 'Compare: interpolation (zoom)',     'A framed part of the photo enlarged 4 to 6 times with nearest neighbour, bilinear and bicubic interpolation.'
+ };
+H = containers.Map(c(:, 1), c(:, 2));
 end
 
 % ---------------------------------------------------------------------------
@@ -173,4 +257,89 @@ if isfield(inf0, 'inliers')
 else
     info = sprintf('%sshift found: dx=%d, dy=%d', note, inf0.shift(1), inf0.shift(2));
 end
+end
+
+% ---------------------------- comparison views ----------------------------------------
+function [J, info] = cmpEnhance(I, ref)
+T = fitTile(I);
+if isempty(ref), ref = grayTransform(T, 'gamma', 0.5); else, ref = toDouble(ref); end
+J = tileMontage({T, histEqualize(T), histMatch(T, ref), grayTransform(T, 'gamma', 0.5), smoothFilter(T, 'median', 3), ...
+                 smoothFilter(T, 'gaussian', 5), sharpenFilter(T, 'laplacian', 1), ...
+                 freqFilter(T, 'lowpass', 0.15, 'butterworth'), freqFilter(T, 'highpass', 0.10, 'butterworth')}, [3 3]);
+info = 'Nine Module 1 results next to the original (left to right, top to bottom); the name is written in each tile.';
+end
+
+function [J, info] = cmpEdges(I, ~)
+G = toGray(fitTile(I));
+Es = edgeDetect(G, 'sobel');  Ep = edgeDetect(G, 'prewitt');  Ec = edgeDetect(G, 'canny');
+J = tileMontage({G, Es, Ep, Ec}, [2 2]);
+info = sprintf('Edge pixels: Sobel %d, Prewitt %d, Canny %d', nnz(Es), nnz(Ep), nnz(Ec));
+end
+
+function [J, info] = cmpSegment(I, ~)
+T = fitTile(I);  G = toGray(T);
+[~, Bo] = otsuThreshold(G);
+Ba = adaptiveThreshold(G, 31, 0.05, 'dark');
+Br = regionGrow(G, round(size(G) / 2), 0.12);
+Bc = colorSegment(T, 'HSV', 'white');
+Bm = fillHoles(morphOp(edgeDetect(G, 'canny'), 'close', makeSE('disk', 3)));
+J = tileMontage({T, Bo, Ba, Br, Bc, Bm}, [2 3]);
+info = sprintf('White = segmented foreground. Area: Otsu %.0f %%, adaptive %.0f %%, region growing %.0f %%, colour %.0f %%, edges+closing %.0f %%', ...
+               100 * mean(Bo(:)), 100 * mean(Ba(:)), 100 * mean(Br(:)), 100 * mean(Bc(:)), 100 * mean(Bm(:)));
+end
+
+function [J, info] = cmpGeom(I, ~)
+T = fitTile(I);  [h, w, ~] = size(T);
+Ta = affineOpImage(T);
+J = tileMontage({T, geometricTransforms(T, 'translate', round(0.08 * w), round(0.06 * h)), geometricTransforms(T, 'scale', 1.4), ...
+                 geometricTransforms(T, 'rotate', 15), geometricTransforms(T, 'shear', 0.25, 0), Ta, ...
+                 warpImage(T, diag([1.6 1.6 1]), [h w], 'nearest', 'forward'), warpImage(T, diag([1.6 1.6 1]), [h w], 'bilinear', 'reverse'), ...
+                 radialDistortion(radialDistortion(T, -0.3, 0, 'apply'), -0.3, 0, 'correct')}, [3 3]);
+info = 'Nine Module 3 results next to the original; the name is written in each tile.';
+end
+
+function [J, info] = cmpInterp(I, ~)
+T = fitTile(I);  [h, w, ~] = size(T);
+ch = max(8, round(h / 6));  cw = max(8, round(w / 6));
+y0 = max(1, round(h / 2 - ch / 2));  x0 = max(1, round(w / 2 - cw / 2));
+crop = T(y0:y0 + ch - 1, x0:x0 + cw - 1, :);
+sc = min(h / ch, w / cw);
+F = T;  F([y0 y0 + 1 y0 + ch - 2 y0 + ch - 1], x0:x0 + cw - 1, :) = 1;  F(y0:y0 + ch - 1, [x0 x0 + 1 x0 + cw - 2 x0 + cw - 1], :) = 1;
+J = tileMontage({F, imResize(crop, sc, 'nearest'), imResize(crop, sc, 'bilinear'), imResize(crop, sc, 'bicubic')}, [2 2]);
+info = sprintf('The framed part (%d x %d px) enlarged %.1f times by three interpolation methods.', cw, ch, sc);
+end
+
+function J = affineOpImage(T)
+a = 10 * pi / 180;
+A = 0.9 * [cos(a) sin(a); -sin(a) cos(a)] * [1 0.15; 0 1];
+[h, w, ~] = size(T);
+c = [(w + 1) / 2; (h + 1) / 2];
+J = geometricTransforms(T, 'affine', [A c - A * c]);
+end
+
+function T = fitTile(I)
+% an RGB copy of the photo, at most 480 pixels on the long side, so that a montage stays small
+T = rgb3(I);
+sc = min(1, 480 / max(size(T, 1), size(T, 2)));
+if sc < 1, T = rgb3(imResize(T, sc, 'bilinear')); end
+end
+
+function J = tileMontage(tiles, grid)
+% one picture made of grid(1) x grid(2) tiles with a 4-pixel gap (the GUI relies on this layout to write the names)
+R = grid(1);  C = grid(2);  g = 4;
+h = max(cellfun(@(t) size(t, 1), tiles));  w = max(cellfun(@(t) size(t, 2), tiles));
+J = 0.12 * ones(R * h + (R - 1) * g, C * w + (C - 1) * g, 3);
+for k = 1:numel(tiles)
+    t = rgb3(tiles{k});
+    t = t(1:min(h, size(t, 1)), 1:min(w, size(t, 2)), :);
+    r = ceil(k / C);  c = mod(k - 1, C) + 1;
+    y = (r - 1) * (h + g);  x = (c - 1) * (w + g);
+    oy = floor((h - size(t, 1)) / 2);  ox = floor((w - size(t, 2)) / 2);
+    J(y + oy + (1:size(t, 1)), x + ox + (1:size(t, 2)), :) = t;
+end
+end
+
+function T = rgb3(T)
+T = min(max(double(T), 0), 1);
+if size(T, 3) == 1, T = repmat(T, [1 1 3]); end
 end

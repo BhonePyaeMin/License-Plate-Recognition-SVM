@@ -357,10 +357,9 @@ check('suggestPrefilters: dark / flat photos get gamma / stretching only on requ
 check('suggestPrefilters: a normal photo gets no filter', isempty(chC));
 appF = LPR_Toolbox('Visible', 'off');
 appF.loadImage(rand(60, 90, 3), 'test');
-appF.setFilters(struct('name', {'Median filter', 'Resize (change the resolution)'}, 'p', {3, [2 2]}), 'symmetric');
-appF.previewFilters();
+appF.setFilters(struct('name', {'Median filter', 'Resize (change the resolution)'}, 'p', {3, [2 2]}));
 stF = appF.state();
-check('GUI filter panel: preview applies the chain to the original (median, then resize x2 gives 120 x 180)', isequal(size(stF.filtered), [120 180 3]) && isequal(size(stF.orig), [60 90 3]));
+check('GUI filter panel: the filtered photo appears at once and applies the chain to the original (median, then resize x2 gives 120 x 180)', isequal(size(stF.filtered), [120 180 3]) && isequal(size(stF.orig), [60 90 3]));
 appF.clearFilters();
 stF = appF.state();
 check('GUI filter panel: "Remove filters" restores the original photo as the input', isempty(stF.filtered) && isequal(stF.I, stF.orig));
@@ -392,7 +391,14 @@ if exist(finalModel, 'file')
         rN = recognizePlate(imread(fullfile('images', 'failures', 'night_traffic_user.jpg')), F3.model);
         check('user photos: the van of the Hong Kong photo is not boxed as a plate, the Mini of the night photo is read', ...
               ~rK.found && rN.found && strcmp(rN.text, 'T935AK797'));
+        % the same photo at 70 % size: the plate box is tight, "797" touches the edge of the crop and was lost (T935AK) before MARGINRETRY
+        n70 = imresize(imread(fullfile('images', 'failures', 'night_traffic_user.jpg')), 0.7);
+        o70 = readCrop(n70, F3.model, round([287 381 383 296] * 0.7));
+        check('night photo at 70 % size: the crop of the Mini is read with its region number (T935AK797, MARGINRETRY)', ~isempty(o70) && strcmp(o70(1).text, 'T935AK797'));
     end
+    nr = struct('found', false, 'text', '', 'conf', [], 'boxes', [], 'segDebug', [], 'detectDebug', [], 'guess', []);
+    [rM, bM] = marginRetry({zeros(40, 100, 3)}, F3.model, [10 10 60 20], nr);
+    check('marginRetry: a reading that was not found is returned unchanged', ~rM.found && isequal(bM, [10 10 60 20]));
 end
 
 % -------------------- filter panel and plate tab of the GUI --------------------
@@ -406,9 +412,12 @@ appG.loadImage(rand(60, 90, 3), 'chooser test');
 ddG = findall(appG.fig, 'Type', 'uidropdown');
 btnG = findall(appG.fig, 'Type', 'uibutton');
 cbG = findall(appG.fig, 'Type', 'uicheckbox');
-check('GUI: the situation chooser and "Use recommended" are gone; no "Filter guide" button, no Myanmar text; "Enlarge text" is there', ...
+lblG = findall(appG.fig, 'Type', 'uilabel');
+check('GUI: the situation chooser, "Use recommended", "Enlarge text", "Suggest filters", "Preview filtered", the border list and the "Pick up to four filters" text are gone; no "Filter guide" button', ...
       ~any(arrayfun(@(d) any(contains(string(d.Items), 'Small or far plate')), ddG)) && ~any(arrayfun(@(b) strcmp(b.Text, 'Use recommended'), btnG)) && ...
-      ~any(arrayfun(@(b) contains(b.Text, 'guide', 'IgnoreCase', true), btnG)) && any(arrayfun(@(b) strcmp(b.Text, 'Enlarge text'), btnG)));
+      ~any(arrayfun(@(b) contains(b.Text, 'guide', 'IgnoreCase', true), btnG)) && ~any(arrayfun(@(b) strcmp(b.Text, 'Enlarge text'), btnG)) && ...
+      ~any(arrayfun(@(b) any(strcmp(b.Text, {'Suggest filters', 'Preview filtered'})), btnG)) && ~any(arrayfun(@(d) any(strcmp(d.Items, 'symmetric')), ddG)) && ...
+      ~any(arrayfun(@(l) contains(string(l.Text), 'Pick up to four'), lblG)) && ~any(arrayfun(@(l) startsWith(string(l.Text), 'Border'), lblG)));
 sbG = findall(appG.fig, 'Type', 'uistatebutton');
 check('GUI plate tab: "Find ALL plates" is ticked by default, "Night vision" is there (not ticked), a "Show plate" list, a "Crop" button with Clear / Remove / Copy; no "Car by car" box and no "Pick vehicle" button', ...
       any(arrayfun(@(c) startsWith(c.Text, 'Find ALL') && c.Value, cbG)) && any(arrayfun(@(c) startsWith(c.Text, 'Night vision') && ~c.Value, cbG)) && ...
@@ -416,20 +425,17 @@ check('GUI plate tab: "Find ALL plates" is ticked by default, "Night vision" is 
       all(ismember({'Clear crops', 'Remove', 'Copy'}, arrayfun(@(b) string(b.Text), btnG))) && ...
       ~any(arrayfun(@(c) startsWith(c.Text, 'Car by car'), cbG)) && ~any(arrayfun(@(b) contains(b.Text, 'Pick vehicle'), btnG)));
 cbAll = cbG(arrayfun(@(c) startsWith(c.Text, 'Find ALL'), cbG));
-appG.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate');
-appG.previewFilters();
+appG.setFilters(struct('name', 'Median filter', 'p', 3));
 stG = appG.state();
-check('GUI: a median filter put into Filter 1 gives a preview of the same size that is not the original', ...
+check('GUI: a median filter put into Filter 1 gives a filtered photo of the same size that is not the original', ...
       isequal(size(stG.filtered), size(stG.orig)) && max(abs(stG.filtered(:) - stG.orig(:))) > 1e-6);
-appG.suggestFilters();
-scrT = get(0, 'ScreenSize');
-bigG = appG.enlargeText();
-taBig = findall(bigG, 'Type', 'uitextarea');
-check('GUI: "Enlarge text" opens a big window with the text of the panel in a large font', ...
-      ~isempty(taBig) && taBig.FontSize >= 16 && numel(taBig.Value) >= 2 && bigG.Position(3) > 0.5 * scrT(3));
-close(bigG);
+imgsG = findall(appG.fig, 'Type', 'image');
+asDouble = @(c) double(c) / (1 + 254 * isinteger(c));
+okOrigShown = any(arrayfun(@(i) isequal(size(i.CData), size(stG.orig)) && mean(abs(asDouble(i.CData(:)) - stG.orig(:))) < 0.01, imgsG));
+okFiltShown = any(arrayfun(@(i) isequal(size(i.CData), size(stG.filtered)) && mean(abs(asDouble(i.CData(:)) - stG.filtered(:))) < 0.01, imgsG));
+check('GUI: the ORIGINAL (left) and the FILTERED photo (right) are both on screen at the same time', okOrigShown && okFiltShown);
 appG.loadImage(rand(60, 90, 3), 'chooser test 2');
-appG.setFilters(struct('name', 'Resize (change the resolution)', 'p', [2 3]), 'replicate');
+appG.setFilters(struct('name', 'Resize (change the resolution)', 'p', [2 3]));
 appG.recognize();                                                         % "Recognise plate" then reads the filtered photo
 stG = appG.state();
 check('GUI: "Recognise plate" reads the filtered photo (here enlarged 2 times)', isequal(size(stG.I), [120 180 3]) && isequal(size(stG.orig), [60 90 3]));
@@ -438,7 +444,7 @@ appG.recognize();
 stG = appG.state();
 check('GUI: after loading a new photo "Recognise plate" works on the original size (no filter is left over)', isequal(size(stG.I), [60 90 3]));
 cbAll.Value = false;                                                       % one plate at a time
-appG.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate');
+appG.setFilters(struct('name', 'Median filter', 'p', 3));
 appG.recognizeFiltered();
 stG = appG.state();
 tasG = findall(appG.fig, 'Type', 'uitextarea');
@@ -484,6 +490,66 @@ if exist(finalModel, 'file') && exist('plV', 'var')                     % Find A
     check('GUI: "Remove" deletes the chosen reading from the list', numel(stG.plates) == nBefore - 1);
 end
 close(appG.fig);
+
+% ------------- the matrix presets of the filter panel -------------
+kpN = kernelPresets(1);  okK = numel(kpN) == 12;  sumsK = zeros(1, numel(kpN));
+for q = 1:numel(kpN)
+    Kq = str2num(kernelPresets(2, q)); %#ok<ST2NM>
+    okK = okK && isnumeric(Kq) && all(isfinite(Kq(:))) && all(mod(size(Kq), 2) == 1);
+    sumsK(q) = sum(Kq(:));
+end
+isEdgeK = ismember(kpN, {'Edge (Laplacian)', 'Sobel (horizontal gradient)', 'Prewitt (horizontal gradient)', 'Emboss'});
+check('the 12 matrix presets are numeric matrices with an odd size; smoothing, sharpening and identity add up to 1, the edge presets to 0 (emboss to 1)', ...  
+      okK && all(abs(sumsK(~isEdgeK) - 1) < 1e-9) && all(abs(sumsK(ismember(kpN, {'Edge (Laplacian)', 'Sobel (horizontal gradient)', 'Prewitt (horizontal gradient)'}))) < 1e-9));
+
+% ------------- the project brief: every function of Module 1, 2 and 3 is in the toolbox and in the GUI -------------
+opsT = toolboxOperations();
+namesT = {opsT.name};
+need1 = {'Histogram equalisation', 'Histogram matching', 'Brightness / contrast', 'Gamma correction', 'Contrast stretching', 'Mean filter', 'Median filter', ...
+         'Laplacian sharpening', 'High-pass sharpening', 'Frequency low-pass', 'Frequency high-pass', 'Frequency band-pass'};
+need2 = {'Sobel edges', 'Prewitt edges', 'Canny edges', 'Compare: edge detectors', 'Otsu threshold', 'Region growing', 'Colour segmentation: white (HSV)', ...
+         'Colour segmentation: red (RGB range)', 'Morphology: dilation', 'Morphology: erosion', 'Morphology: opening', 'Morphology: closing', 'Shape segmentation', 'Compare: segmentation methods'};
+need3 = {'Translation', 'Scaling / zoom', 'Rotation', 'Affine', 'Forward mapping', 'Reverse mapping', 'Radial distortion: correct', 'Resize: nearest neighbour', ...
+         'Resize: bilinear', 'Resize: bicubic', 'Image registration'};
+hasOps = @(list, m) all(cellfun(@(n) any(contains(namesT(:), n) & [opsT.module]' == m), list));
+check('brief coverage: all Module 1, Module 2 and Module 3 functions of the project brief are GUI operations (histogram, spatial and frequency filters; Sobel / Prewitt / Canny with comparison, Otsu, region growing, colour, morphology, shape; transforms, forward / reverse mapping, distortion, interpolation, registration)', ...
+      hasOps(need1, 1) && hasOps(need2, 2) && hasOps(need3, 3));
+imT = repmat(G, [1 1 3]);  badOps = {};
+for q = 1:numel(opsT)
+    pvT = arrayfun(@(t) t.default, opsT(q).params);
+    try
+        [JT2, infT] = opsT(q).run(imT, pvT, []);
+        okq = isnumeric(JT2) && all(isfinite(JT2(:))) && ischar(infT) && numel(opsT(q).help) > 20 && all(double(opsT(q).help) < 128);
+    catch
+        okq = false;
+    end
+    if ~okq, badOps{end+1} = opsT(q).name; end %#ok<SAGROW>
+end
+check(sprintf('all %d GUI operations run with their start values, return a picture and have an English help text (failed: %s)', numel(opsT), strjoin(badOps, ', ')), isempty(badOps));
+cmpOps = opsT(~cellfun(@isempty, {opsT.tiles}));
+okC = numel(cmpOps) == 5;
+for q = 1:numel(cmpOps)
+    Jc = cmpOps(q).run(imT, [], []);
+    okC = okC && numel(cmpOps(q).tiles) == prod(cmpOps(q).grid) && size(Jc, 3) == 3 && min(Jc(:)) >= 0 && max(Jc(:)) <= 1;
+end
+check('the 5 "Compare: ..." views return one picture with one named tile per method', okC);
+appC = LPR_Toolbox('Visible', 'off');
+appC.loadImage(imT, 'compare test');
+appC.applyByName('Compare: edge detectors');
+stC = appC.state();
+strsC = strings(0, 1);
+for tC = findall(appC.fig, 'Type', 'text')', sT = string(tC.String);  strsC = [strsC; sT(:)]; end %#ok<AGROW>
+check('GUI: "Compare: edge detectors" shows Sobel, Prewitt and Canny next to the original, with the name written in every tile', ...
+      size(stC.result, 3) == 3 && all(ismember(["Sobel", "Prewitt", "Canny"], strsC)));
+appC.applyByName('Median filter');
+check('GUI: the chosen operation is explained under the Apply button', ...
+      any(arrayfun(@(l) strcmp(string(l.Text), string(opsT(find(strcmp(namesT, 'Median filter'), 1)).help)), findall(appC.fig, 'Type', 'uilabel'))));
+appC.setFilters(struct('name', 'Convolution with my own kernel', 'p', []), '[0 0 0; 0 1 0; 0 0 0]');
+stC = appC.state();  okId = max(abs(stC.filtered(:) - stC.orig(:))) < 1e-9;
+appC.setFilters(struct('name', 'Convolution with my own kernel', 'p', []), '[1 1 1; 1 1 1; 1 1 1]/9');
+stC = appC.state();  okBox = mean(abs(stC.filtered(:) - stC.orig(:))) > 1e-4;
+check('GUI: the matrix typed in "Matrix" is the kernel of the filter (identity gives the photo back, a box blur changes it)', okId && okBox);
+close(appC.fig);
 
 % ------------- consensus vote over filtered copies -------------
 if exist(finalModel, 'file') && exist('plV', 'var')

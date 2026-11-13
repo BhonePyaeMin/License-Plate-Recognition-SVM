@@ -47,29 +47,24 @@ from scratch in `toolbox/`.
      a figure with every step. (The old "Car by car" box and the separate "Pick vehicle..." window of rounds 5 to 13 are gone; the crop tool replaces both. `readCars` and `pickCarROI` stay as functions for scripts.)
    * When nothing is found the message says why (e.g. "only 3 characters", "no region with enough characters",
      "plate score too low", "plate too small (54 px)").
-   * **Pre-filter panel (right side of the window).** For photos that are noisy, dark, flat, blurry or unevenly
-     lit: choose up to four filters (drop-down lists, numbers next to them), choose the **border padding**
-     (`replicate` / `symmetric` / `zero`: how the filters fill in pixels outside the picture), then
-     **Preview filtered** (shows the result and the histograms), **Recognise on filtered photo** (the plate is
-     searched in the filtered picture) or **Compare with original** (reads both and prints both results,
-     with the true plate when it is known). **Suggest filters** measures the photo (brightness, contrast,
-     salt-and-pepper dots, noise level) and fills the list for you. **Remove filters** goes back to the original.
-     Filters always work on the original photo, in the order of the list. The 17 filters (`prefilterOps`):
-     resize with nearest / bilinear / bicubic interpolation (spatial resolution), convolution with your own
-     kernel (type a matrix or pick Sharpen, Laplacian, box, Gaussian, Sobel), mean, Gaussian, median, bilateral,
-     unsharp masking, Laplacian sharpening, Richardson-Lucy deblurring, gamma, brightness/contrast, contrast
-     stretching, global and local (CLAHE) histogram equalisation, illumination correction, frequency-domain
-     low-pass and band-pass. In a script: `J = applyPrefilters(img, struct('name','Median filter','p',3)); r = recognizePlate(J, model);`
+   * **Filter panel (right side of the window).** For photos that are noisy, dark, flat, blurry or unevenly lit: choose up to four filters
+     (drop-down lists **Filter 1 ... Filter 4**, numbers next to them). **The filtered photo appears next to the original at once** (right picture) every time a filter,
+     a number or the matrix changes; there is no Preview button any more. **Recognise on filtered photo** searches the plate in the filtered picture,
+     **Compare with original** reads both and prints both results (with the true plate when it is known), **Remove filters** goes back to the original.
+     Filters always work on the original photo, in the order of the list. The 17 filters (`prefilterOps`): resize with nearest / bilinear / bicubic
+     interpolation, **convolution with your own matrix**, mean, Gaussian, median, bilateral, unsharp masking, Laplacian sharpening, Richardson-Lucy deblurring,
+     gamma, brightness/contrast, contrast stretching, global and local (CLAHE) histogram equalisation, illumination correction, frequency-domain low-pass and band-pass.
+     In a script: `J = applyPrefilters(img, struct('name','Median filter','p',3)); r = recognizePlate(J, model);`
+   * **The matrix box.** Under "Own matrix" pick one of 12 presets (`kernelPresets`: three sharpeners, two box blurs, two Gaussians, Laplacian, Sobel, Prewitt, emboss, identity) or
+     type your own, e.g. `[0 -1 0; -1 5 -1; 0 -1 0]` (odd number of rows and columns; sum 1 keeps the brightness, sum 0 gives an edge map), choose **Convolution with my own kernel**
+     in a filter list and press Enter: the filtered photo updates.
    * **Which filter for which photo?** The situation chooser ("Use recommended") was removed in round 13: the tests showed that **no filter** was
-     the best choice for most photos (section 5a''''''' and rounds 11 and 12, which describe the chooser as it was). **Suggest filters** still measures
-     the photo and fills the boxes, and you can pick up to four filters yourself.
-     The four filter rows are called **Filter 1 ... Filter 4**: click the list of Filter 1 (it says "(none)"), choose a filter, type its numbers into the
-     white fields under it. **Enlarge text** shows the text box of the panel in a
-     big window with big letters. Choosing a filter in a box prints what the filter does, where it helps and where it hurts.
+     the best choice for most photos (section 5a''''''' and rounds 11 and 12, which describe the chooser as it was). Choosing a filter prints what it does, where it helps and where it hurts.
      If "Recognise on filtered photo" finds nothing, the text says whether the ORIGINAL photo reads (then the filters
      made it worse) or not (then the filters are not the cause). If the filters turn the picture black, white or flat
-     (an edge kernel such as Laplacian or Sobel), the panel prints a WARNING. The full guide with pictures and measurements is
-     **`docs/Filter_Guide_EN.pdf`** (English) and **`docs/Filter_Guide_EN_MY.pdf`** (English + Myanmar).
+     (an edge kernel such as Laplacian or Sobel), the panel prints a WARNING. The guide of round 15 with pictures, matrices, a situation table and a guide to Modules 1 to 3 is
+     **`LPR_Toolbox_Guideline.pdf`** (a local file, not stored in this repository); the older measured guides are `docs/Filter_Guide_EN.pdf` and `docs/Filter_Guide_EN_MY.pdf`.
+     ("Suggest filters", "Preview filtered", "Enlarge text" and the border list were deleted in round 15; `suggestPrefilters` stays as a function for scripts.)
    * **Photo formats.** JPG, PNG, BMP, TIF and `.jfif` (also JPEG files without an extension) open directly. MATLAB cannot read
      `.webp`, `.avif`, `.jxl`: open them in Paint and use File > Save as > JPEG picture, or take a screenshot (Win+Shift+S).
    * **Window size.** The window now fits the screen (and is maximised): with Windows display scaling the old fixed
@@ -79,7 +74,10 @@ from scratch in `toolbox/`.
      a road marking gives streaks and is refused with the message "characters look like streaks or noise".
      Turn it off with `recognizePlate(img, model, 'CharCheck', false)`.
    * Tabs **1 Enhance / 2 Segment / 3 Geom.**: choose a technique in the drop-down, adjust
-     the sliders, press **Apply**. **Use result as input** chains operations (e.g. equalise → Canny).
+     the sliders, press **Apply**; the original (left) and the result (right) are shown side by side (Module 1 also draws both histograms).
+     A short text under the Apply button says what the technique does and when to use it. The last entry of each module is a **Compare: ...** view
+     (enhancement methods, edge detectors, segmentation methods, geometric transforms, interpolation) that shows several methods in one picture with the name in every tile.
+     **Use result as input** chains operations (e.g. equalise → Canny).
 3. Without the GUI:
 
    | Command | What it does |
@@ -89,7 +87,7 @@ from scratch in `toolbox/`.
    | `demo_lpr('your.jpg','','pick')` | you click two corners around ONE car first (`pickCarROI`); only that car is searched |
    | `markPlateBoxes` | for every new photo in `images/real`: click the plate corners, type the plate text; appends to `plate_boxes.csv` and `labels.csv` (note `night`) |
    | `demo_modules` | runs all three modules on one image, saves comparison figures to `results/` |
-   | `run_tests` | 125 self-checks for every module and the recogniser |
+   | `run_tests` | 134 self-checks for every module and the recogniser |
    | `recognizePlates(img, model)` | finds and reads **all** plates of a photo (struct array: box, text, conf, score, width, reliable) |
    | `train_lpr_model` | (re)trains the synthetic character SVMs (`models/lpr_svm_model*.mat`) |
    | `train_real_model` | trains the plate SVM and the character SVM with the real photos, prints the held-out result (`train_real_model('plate')` retrains only the plate SVMs, ~3 min; `train_real_model('chars')` only the character SVMs, 1 min + the held-out test) |
@@ -723,6 +721,29 @@ What the five screenshots showed and what was changed:
 `SLJ43E2C` (Singapore) wrong by one to three characters; Honda, `B178PC178`, `SLJ6473J` not read; Skoda `ZMHJEECF7` (true `MH20EE0943`). That is 3 of 10 plates exact, 55 % of the characters, 46 s per photo. A guarantee of correct numbers for every plate is not possible with this reader:
 on held-out photos of the same kinds as the training photos it reads about 55 % of the plates exactly, on photos of designs it has not seen far fewer (README rounds 8 to 11). What improves it is more labelled photos of the plates you care about (the 470-photo Indian sample of round 10 is waiting for you to download it).
 
+### 5a'''''''''''''''''''. Round 16: the region number "797" was lost (T935AK7), "crop N" labels removed (2026-11-11)
+
+What you asked for (screenshots of the night photo with three crops): "delete the labels crop 1, 2, 3 in the pictures; make sure the plate numbers are right in the segmented view and in the SVM view: T935AK7 is shown, the full number is T935AK797".
+* **Labels.** The blue "crop N" tags are gone; the dashed blue frames stay.
+* **Cause.** `segmentChars` drops every component that touches the border of the plate crop. When the box is tight, the small region number "797" (and the line under it) touches the right edge and is lost; on a dark photo the plate may be cut out of the brightened / equalised copy, where glare joins the characters. On the night photo shrunk to 70 % the crop of the Mini read `T935AK`, at 55 % also `T935AK` (the plate box 105 px wide round a 64 px plate).
+* **Fix.** New `toolbox/lpr/marginRetry.m`, called by `recognizePlates` (Find ALL and the Crop tool) and by `recognizePlate`. Only when the reading looks cut off (the segmented row leaves a gap of more than 1.2 character widths at one end of the crop) the plate is read again from boxes that are 8 % and 16 % of the plate height wider and from the original photo; a new reading is taken only if it holds the old text (or differs in one character at the start or end), is longer (at most 10), has no speck-sized characters and its vote confidence is at most 0.15 lower. The segmented view and the SVM characters belong to the reading that is shown (they are copied from the same result).
+* **Merging.** In the GUI a plate that was read twice (Find ALL, then a crop) kept the reading with the higher mean confidence; the small region digits lower that mean, so a short reading could beat the full number. Now a longer reading that contains the shorter one wins (`betterReading` in `LPR_Toolbox.m`).
+* **Measured** (night photo, Crop on the Mini, model `lpr_svm_model_real`): 100 %, 70 % and 55 % of the size now read `T935AK797` (70 % and 55 % read `T935AK` before); at 50 % (plate 57 px wide) it reads `T935AK297`, the pixels are not there. On the 16 test photos of `images/real` the readings are identical before and after (11 of 16 exact, 79.2 % of the characters), the time per photo rose from 14.2 s to 17.7 s. The white car of the same photo (plate 71 px, B178PC178) is still misread (`8178PC478`, orange = unreliable).
+* **Not reproduced:** the `T935AK7` of your window: with `night view 1.jpg` (1710 x 855) the window gives `T935AK797` before and after, so your photo is probably a smaller copy; the fix covers that case.
+* `run_tests`: two new checks (70 % night photo, `marginRetry` leaves an unread plate alone): **134 self-checks**.
+
+### 5a''''''''''''''''''. Round 15: filters shown live next to the original, comparison views for the three modules, guideline PDF (2026-11-11)
+
+What you asked for (screenshots of the filter panel, the model error and the team structure of the project brief): "fix errors and change design, add / test functions (can see filtered picture and original picture) according to the three modules; delete 'Pick up ...', Enlarge text, Border, Suggest filters and Preview filtered; give me a guideline PDF: filters with adjustable matrix, which filter in which situation, and a guide to Module 1, 2, 3".
+* **Errors.** `Unable to find function @(~,~)onPickCar()` / `onClearCar()` came from a window that was opened BEFORE round 14 (MATLAB keeps the old window; the new `LPR_Toolbox.m` no longer has those functions): `close all force`, `clear all`, `LPR_Toolbox` fixes it. `This model has no plate SVM` came from the button **Train SVM model...**: it trains a model from computer fonts only (no plate SVM) and used to swap it for the real-photo model. Now the button asks first when `models/lpr_svm_model_real.mat` exists, never overwrites an installed model (it saves to the temp folder) and keeps the real-photo model in use; `ensureModel` also goes back to the real-photo model if a font-only model is ever loaded.
+* **Deleted from the window:** the text "Pick up to four filters yourself ...", **Enlarge text**, the **Border (padding)** list (the filters always use `replicate`), **Suggest filters** and **Preview filtered**.
+* **Original and filtered photo at the same time.** The two pictures at the top are now equally wide. Choosing a filter, changing a number, typing a matrix or pressing Enter shows the filtered photo on the right at once (`livePreview`); no filter active = empty right picture. The text box under the filters lists what ran, with the time, and explains the last filter chosen.
+* **Design.** Blue section headings in the filter panel ("Filters", "Own matrix"), a Preset list with 12 matrices (`kernelPresets.m`) next to the Matrix box, a one-line explanation under the Apply button of every operation (what it does, when to use it: `toolboxOperations` field `help`), the left column is wider so that the tab **1 Enhance** is no longer hidden behind the arrow of the tab bar.
+* **Functions of the project brief.** All of them were already in the toolbox; the new part is that every comparison the brief asks for is now also in the window: **Compare: enhancement methods** (Module 1), **Compare: edge detectors** and **Compare: segmentation methods** (Module 2), **Compare: geometric transforms** and **Compare: interpolation (zoom)** (Module 3). Each shows several methods in one picture with the name written in every tile. The window has now 53 operations (18 / 18 / 17).
+* **Tests.** `run_tests` now checks that every function of the brief is a GUI operation, that all 53 operations run with their start values and have an English help text, the five comparison views, the Compare edge detectors picture in the window (names drawn), the help text under Apply, the matrix box (identity gives the photo back, a box blur changes it), that the original and the filtered photo are both on screen, and that the deleted controls are gone: **132 self-checks**.
+* **Guideline PDF (your explicit request; the older rule "do not touch PDFs" was lifted for this one; the file stays on the local computer and is not pushed to GitHub):** `LPR_Toolbox_Guideline.pdf` (21 pages, English): the window in one minute; the 17 filters with number ranges and what they do; the matrix box (rules, recipes, 12 presets with the effect on a soft plate); a table and pictures "which filter for which situation" (rendered plate damaged on purpose, repaired, and the reading of the SVM under every picture); a guide to Module 1, 2 and 3 with the brief's requirements next to the operation that covers them, a thumbnail of every operation, and the comparison pictures; a checklist for the demonstration. It is built by `docs/guide_source/make_guideline_assets.m` (data and pictures) and `docs/guide_source/build_guideline.py` (HTML to PDF with Edge). The older `Filter_Guide_*.pdf` were not touched.
+* **Not checked with a physical mouse:** typing a number or a matrix and pressing Enter, and choosing in the lists, call the same `ValueChangedFcn` functions that the scripted tests call; I could not click in your window.
+
 ### 5a''''''''''''''''. Round 14: a crop tool like a photo editor replaces "Car by car" and "Pick vehicle" (2026-11-10)
 
 What you asked for (screenshot of the two Nissans: "I want a crop feature like photo crop that can detect and recognise each car's plate; I do not understand the pick-up-car design; make it modern and useful and get correct numbers"):
@@ -738,7 +759,7 @@ What you asked for (screenshot of the two Nissans: "I want a crop feature like p
 * **Does cropping make the numbers more correct? Not on average.** I placed rectangles from the TRUE plate boxes of your 15 plates (the user's job in the GUI) and read them with `readCrop`: **car-sized crops (5.2 x 4.4 plate widths): 2 of 15 exact, 10 plates read, 53.3 % of the characters; plate-zone crops (2.2 x 1.8 plate widths): 3 of 15 exact, 11 read, 54.3 %; Find ALL on the whole photo: 4 of 15 exact, 11 read, 56.2 %.**
   The three numbers are within the noise of a 15-plate sample, and the reading changes with the rectangle: `W35AZL` became `35AZL` when the crop was shifted by one or two pixels, the taxi `KA53C6932` is exact in the car crop and `VA53C699` in the plate-zone crop. So a crop is a way to **aim at one car** (a plate that Find ALL missed, a car you want to see alone, a smaller photo area, a faster search: 15 to 50 s instead of 1 to 4 minutes), not a way to get more correct characters. What decides the correctness is still the blur of 8 to 14 px characters.
 * **Not checked with a physical mouse.** The drag frame, the crop, the merge into the list, the click on the gallery and Remove were run by script through the same functions the mouse callbacks call (`app.cropDrag`, `app.cropRead`) and screenshots were taken; the mouse hooks (`WindowButtonDownFcn`, `WindowButtonMotionFcn`, `WindowButtonUpFcn` of the figure and `CurrentPoint` of the axes) are the standard way in MATLAB figures but I could not click with your mouse.
-* `run_tests`: 125 self-checks (the old "Car by car" check was replaced; new: the Crop / Clear / Remove / Copy controls, `readCrop` returns boxes of the original photo, a tiny rectangle is ignored, the GUI crop is merged without a duplicate, a click on the gallery, Remove).
+* `run_tests`: 132 self-checks (the old "Car by car" check was replaced; new: the Crop / Clear / Remove / Copy controls, `readCrop` returns boxes of the original photo, a tiny rectangle is ignored, the GUI crop is merged without a duplicate, a click on the gallery, Remove).
 
 ### 5a'''''''''''''''. Screenshots of round 13: merged characters, numbers above the plates, car by car, night vision (2026-11-10)
 
@@ -880,7 +901,7 @@ depends strongly on the font (exact-plate rate on the four held-out fonts ≈ 64
 ```
 LPR_Toolbox.m           GUI                      train_lpr_model.m   synthetic character SVMs
 demo_lpr.m              recognise one image      train_real_model.m  plate SVM + real-photo SVM
-demo_modules.m          figures, all modules     run_tests.m         125 self-checks
+demo_modules.m          figures, all modules     run_tests.m         134 self-checks
 setup_toolbox.m         add folders to path
 toolbox/
   common/               toDouble, toGray, padImage, spatialFilter, gaussianKernel, showImage, imageMetrics, editDistance

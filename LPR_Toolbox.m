@@ -12,12 +12,13 @@ function app = LPR_Toolbox(varargin)
 %                     scene, "Night vision" searches a brightened copy of a dark photo; "Crop" works like the crop tool of a photo editor:
 %                     press it, drag a rectangle around one car or plate on the photo, and every plate in it is read at once and added to the list;
 %                     the number of every plate is written above its box, above its picture and above the characters the SVM saw.
-%   The original and the result are shown side by side. "Use result as input"
-%   chains operations (e.g. equalise, then Canny).
-%   The panel on the right ("Pre-filters") filters the ORIGINAL photo with up to four filters
-%   (resolution, convolution, mean / Gaussian / median / bilateral, sharpening, deblurring,
-%   brightness and contrast, local histogram equalisation, illumination, frequency domain),
-%   with a choice of border padding. "Enlarge text" shows the explanation in a big window. "Suggest filters" measures the photo and proposes a chain,
+%   The original (left) and the result (right) are shown side by side, with the histograms of
+%   both under them for Module 1. The last entry of every module is a "Compare: ..." view that shows
+%   several methods in one picture. "Use result as input" chains operations (e.g. equalise, then Canny).
+%   The panel on the right ("Filters") filters the ORIGINAL photo with up to four filters
+%   (resolution, convolution with your own matrix, mean / Gaussian / median / bilateral, sharpening,
+%   deblurring, brightness and contrast, local histogram equalisation, illumination, frequency domain).
+%   The filtered photo appears next to the original as soon as a filter, a number or the matrix changes.
 %   "Recognise on filtered photo" searches the plate in the filtered picture, "Compare" reads
 %   the original and the filtered photo and shows both results.
 %
@@ -34,7 +35,8 @@ ops = toolboxOperations();
 % ------------------------------- state -------------------------------------
 S.orig = [];  S.I = [];  S.ref = [];  S.result = [];
 S.model = [];  S.tpl = [];  S.truth = '';  S.lastRes = [];  S.realIdx = 0;
-S.filtered = [];  S.filterNote = {};  S.useFilters = true;
+S.filtered = [];  S.filterNote = {};  S.useFilters = true;  S.mute = false;  S.guide = {};
+fpad = 'replicate';                                                % border handling of the spatial filters (pixels outside the picture)
 S.plates = [];  S.unread = [];  S.crops = zeros(0, 4);  S.cropMode = false;  S.boxH = gobjects(0);  S.gal = [];
 drag = struct('on', false, 'p0', [0 0], 'p1', [0 0], 'h', gobjects(0));       % the rectangle being dragged on the photo (crop tool)
 fops = prefilterOps();
@@ -48,7 +50,7 @@ if strcmp(p.Results.Visible, 'on')
     try fig.WindowState = 'maximized'; catch, end                  %#ok<CTCH>
 end
 main = uigridlayout(fig, [1 3]);
-main.ColumnWidth = {300, '1x', 360};  main.Padding = [8 8 8 8];
+main.ColumnWidth = {340, '1x', 360};  main.Padding = [8 8 8 8];
 
 left = uigridlayout(main, [3 1]);
 left.RowHeight = {170, '1x', 110};  left.Padding = [0 0 0 0];
@@ -67,7 +69,7 @@ fileLabel.Layout.Row = 5;  fileLabel.Layout.Column = [1 2];
 
 tabs = uitabgroup(left);
 names = {'1 Enhance', '2 Segment', '3 Geom.', '4 Plate'};
-ui = repmat(struct('idx', [], 'dd', [], 'lbl', [], 'sld', []), 1, 3);
+ui = repmat(struct('idx', [], 'dd', [], 'lbl', [], 'sld', [], 'help', []), 1, 3);
 for m = 1:3
     t = uitab(tabs, 'Title', names{m});
     ui(m) = buildOpTab(t, m);
@@ -78,13 +80,13 @@ plate = buildPlateTab(tabPlate);
 infoBox = uitextarea(left, 'Editable', 'off', 'Value', {'Open an image or press "Synthetic car photo".'});
 
 right = uigridlayout(main, [2 2]);
-right.RowHeight = {'1.6x', '1x'};  right.ColumnWidth = {'1.7x', '1x'};  right.Padding = [0 0 0 0];      % the photo (crop tool) gets the wider column
+right.RowHeight = {'1.6x', '1x'};  right.ColumnWidth = {'1x', '1x'};  right.Padding = [0 0 0 0];         % original and filtered / result photo side by side, equally wide
 axOrig = uiaxes(right);  axRes = uiaxes(right);
 axAux  = uiaxes(right);  axAux.Layout.Row = 2;  axAux.Layout.Column = [1 2];
 cla(axOrig); clearResult(); resetAux();
 axis(axAux, 'off');
 axInter = axOrig.Interactions;                                     % restored when the crop tool is switched off
-fp = uipanel(main, 'Title', 'Pre-filters: filter the photo, then recognise again');
+fp = uipanel(main, 'Title', 'Filters (the filtered photo appears next to the original)');
 filt = buildFilterPanel(fp);
 fig.WindowButtonDownFcn   = @(~, ~) onMouseDown();                % crop tool: drag a rectangle on the photo
 fig.WindowButtonMotionFcn = @(~, ~) onMouseMove();
@@ -98,9 +100,8 @@ app.recognize  = @onRecognize;
 app.realSample = @onRealSample;
 app.recognizeAll = @recognizeAllScripted;
 app.state      = @getState;
-app.setFilters = @setFiltersScripted;
-app.suggestFilters = @onSuggestFilters;
-app.previewFilters = @onPreviewFilters;
+app.setFilters = @setFiltersScripted;                             % app.setFilters(chain, kernelText): fills Filter 1-4; the filtered photo is shown at once
+app.showFiltered = @livePreview;
 app.recognizeFiltered = @onRecognizeFiltered;
 app.compareFilters = @onCompareFilters;
 app.clearFilters = @onClearFilters;
@@ -109,21 +110,14 @@ app.cropRead   = @readCropBox;                                    % scripted cro
 app.cropDrag   = @dragCropScripted;
 app.removePlate = @onRemovePlate;
 app.openFile = @openFileScripted;
-app.enlargeText = @onEnlarge;
 app.operations = ops;
 
 % ============================== construction ================================
     function h = buildFilterPanel(parent)
-        g = uigridlayout(parent, [12 1]);
-        g.RowHeight = {48, 28, 26, 54, 54, 54, 54, 54, 28, 30, 28, '1x'};
-        g.Padding = [6 6 6 6];  g.RowSpacing = 4;  g.Scrollable = 'on';
-        uilabel(g, 'Text', 'Pick up to four filters yourself (they run in this order on the ORIGINAL photo). With no filter ticked the original photo is read.', 'WordWrap', 'on');
-        uibutton(g, 'push', 'Text', 'Enlarge text', 'ButtonPushedFcn', @(~, ~) onEnlarge(), ...
-                 'Tooltip', 'Show the text of the box at the bottom in a big window');
-        pr = uigridlayout(g, [1 2]);  pr.Padding = [0 0 0 0];  pr.ColumnWidth = {110, '1x'};
-        uilabel(pr, 'Text', 'Border (padding):');
-        h.pad = uidropdown(pr, 'Items', {'replicate', 'symmetric', 'zero'}, 'Value', 'replicate', ...
-                           'Tooltip', 'How the spatial filters fill in pixels outside the picture (edge effect)');
+        g = uigridlayout(parent, [10 1]);
+        g.RowHeight = {20, 54, 54, 54, 54, 20, 52, 34, 30, '1x'};
+        g.Padding = [8 6 8 6];  g.RowSpacing = 4;  g.Scrollable = 'on';
+        sectionLabel(g, 'Filters (run in this order on the ORIGINAL photo)');
         h.on = gobjects(1, 4);  h.dd = gobjects(1, 4);
         h.l1 = gobjects(1, 4);  h.p1 = gobjects(1, 4);  h.l2 = gobjects(1, 4);  h.p2 = gobjects(1, 4);
         for k = 1:4
@@ -131,47 +125,36 @@ app.operations = ops;
             sg.RowHeight = {26, 26};  sg.ColumnWidth = {'1x', 56, '1x', 56};  sg.Padding = [0 0 0 0];  sg.RowSpacing = 2;  sg.ColumnSpacing = 4;
             top = uigridlayout(sg, [1 2]);  top.Layout.Row = 1;  top.Layout.Column = [1 4];
             top.ColumnWidth = {78, '1x'};  top.Padding = [0 0 0 0];
-            h.on(k) = uicheckbox(top, 'Text', sprintf('Filter %d', k), 'Value', false, ...
+            h.on(k) = uicheckbox(top, 'Text', sprintf('Filter %d', k), 'Value', false, 'ValueChangedFcn', @(~, ~) livePreview(), ...
                                  'Tooltip', 'Tick = use this filter. Choose the filter in the list on the right.');
             h.dd(k) = uidropdown(top, 'Items', [{'(none)'}, {fops.name}], 'ItemsData', num2cell(0:numel(fops)), 'Value', 0, ...
                                  'ValueChangedFcn', @(~, ~) onFilterChanged(k, true));
             h.l1(k) = uilabel(sg, 'Text', '', 'Visible', 'off', 'HorizontalAlignment', 'right');
-            h.p1(k) = uieditfield(sg, 'numeric', 'Value', 0, 'Visible', 'off');
+            h.p1(k) = uieditfield(sg, 'numeric', 'Value', 0, 'Visible', 'off', 'ValueChangedFcn', @(~, ~) livePreview());
             h.l2(k) = uilabel(sg, 'Text', '', 'Visible', 'off', 'HorizontalAlignment', 'right');
-            h.p2(k) = uieditfield(sg, 'numeric', 'Value', 0, 'Visible', 'off');
+            h.p2(k) = uieditfield(sg, 'numeric', 'Value', 0, 'Visible', 'off', 'ValueChangedFcn', @(~, ~) livePreview());
         end
+        sectionLabel(g, 'Own matrix (for "Convolution with my own kernel")');
         kg = uigridlayout(g, [2 2]);
-        kg.RowHeight = {24, 24};  kg.ColumnWidth = {100, '1x'};  kg.Padding = [0 0 0 0];  kg.RowSpacing = 2;
-        uilabel(kg, 'Text', 'Own kernel:');
-        h.preset = uidropdown(kg, 'Items', kernelPresets(1), 'ItemsData', num2cell(1:6), 'Value', 1, ...
+        kg.RowHeight = {24, 24};  kg.ColumnWidth = {70, '1x'};  kg.Padding = [0 0 0 0];  kg.RowSpacing = 2;
+        uilabel(kg, 'Text', 'Preset:');
+        h.preset = uidropdown(kg, 'Items', kernelPresets(1), 'ItemsData', num2cell(1:numel(kernelPresets(1))), 'Value', 1, ...
                               'ValueChangedFcn', @(~, ~) onKernelPreset());
         uilabel(kg, 'Text', 'Matrix:');
-        h.kernel = uieditfield(kg, 'text', 'Value', kernelPresets(2, 1), ...
-                               'Tooltip', 'odd size, e.g. [0 -1 0; -1 5 -1; 0 -1 0]; used by "Convolution with my own kernel"');
-        pg1 = uigridlayout(g, [1 2]);  pg1.Padding = [0 0 0 0];  pg1.ColumnSpacing = 5;
-        uibutton(pg1, 'push', 'Text', 'Suggest filters', 'ButtonPushedFcn', @(~, ~) onSuggestFilters(), ...
-                 'Tooltip', 'Measure the photo (brightness, contrast, dots, noise) and propose filters');
-        uibutton(pg1, 'push', 'Text', 'Preview filtered', 'ButtonPushedFcn', @(~, ~) onPreviewFilters(), ...
-                 'Tooltip', 'Show the filtered photo and the histograms without reading the plate');
+        h.kernel = uieditfield(kg, 'text', 'Value', kernelPresets(2, 1), 'ValueChangedFcn', @(~, ~) livePreview(), ...
+                               'Tooltip', 'odd size, e.g. [0 -1 0; -1 5 -1; 0 -1 0]; edit the numbers and press Enter');
         uibutton(g, 'push', 'Text', 'Recognise on filtered photo', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~, ~) onRecognizeFiltered());
         pg2 = uigridlayout(g, [1 2]);  pg2.Padding = [0 0 0 0];  pg2.ColumnSpacing = 5;
         uibutton(pg2, 'push', 'Text', 'Compare with original', 'ButtonPushedFcn', @(~, ~) onCompareFilters(), ...
                  'Tooltip', 'Read the original and the filtered photo and print both results');
         uibutton(pg2, 'push', 'Text', 'Remove filters', 'ButtonPushedFcn', @(~, ~) onClearFilters(), ...
                  'Tooltip', 'Go back to the original photo');
-        h.report = uitextarea(g, 'Editable', 'off', 'FontSize', 13, 'Value', {'No filter chosen: the original photo is used. Pick filters above or press "Suggest filters".'});
-    end
-
-    function v = kernelPresets(what, k)
-        names = {'Sharpen', 'Edge (Laplacian)', 'Box blur 3x3', 'Gaussian 3x3', 'Identity', 'Sobel (horizontal gradient)'};
-        mats  = {'[0 -1 0; -1 5 -1; 0 -1 0]', '[1 1 1; 1 -8 1; 1 1 1]', '[1 1 1; 1 1 1; 1 1 1]/9', '[1 2 1; 2 4 2; 1 2 1]/16', ...
-                 '[0 0 0; 0 1 0; 0 0 0]', '[-1 0 1; -2 0 2; -1 0 1]'};
-        if what == 1, v = names; else, v = mats{k}; end
+        h.report = uitextarea(g, 'Editable', 'off', 'FontSize', 13, 'Value', {'No filter chosen: the original photo is used. Pick a filter in the list above; the filtered photo appears next to the original.'});
     end
 
     function h = buildOpTab(tab, m)
-        g = uigridlayout(tab, [8 1]);
-        g.RowHeight = {28, 20, 22, 20, 22, 20, 22, 32};  g.Padding = [6 6 6 6];  g.RowSpacing = 4;
+        g = uigridlayout(tab, [9 1]);
+        g.RowHeight = {28, 20, 22, 20, 22, 20, 22, 32, '1x'};  g.Padding = [6 6 6 6];  g.RowSpacing = 4;
         idx = find([ops.module] == m);
         h.idx = idx;
         h.dd = uidropdown(g, 'Items', {ops(idx).name}, 'ItemsData', num2cell(idx), ...
@@ -184,7 +167,8 @@ app.operations = ops;
                                 'ValueChangedFcn',  @(s, e) onSliding(m, k, e.Value));
         end
         uibutton(g, 'push', 'Text', 'Apply', 'FontWeight', 'bold', 'ButtonPushedFcn', @(~,~) onApply(m));
-        % rows: dd, (lbl, sld) x 3, button  -> reorder not needed, grid fills in creation order
+        h.help = uilabel(g, 'Text', '', 'WordWrap', 'on', 'FontSize', 12, 'VerticalAlignment', 'top');      % what the chosen operation does and when to use it
+        % rows: dd, (lbl, sld) x 3, button, help  -> reorder not needed, grid fills in creation order
         ui(m) = h; %#ok<NASGU>
         refreshParams(h, m);
     end
@@ -235,6 +219,7 @@ app.operations = ops;
 
     function refreshParams(h, m)
         g = ops(h.dd.Value);
+        h.help.Text = g.help;
         for k = 1:3
             if k <= numel(g.params)
                 q = g.params(k);
@@ -413,8 +398,22 @@ app.operations = ops;
         S.result = min(max(J, 0), 1);
         showImage(axOrig, S.I, 'Input');
         showImage(axRes, S.result, g.name);
-        if g.module == 1, drawHistograms(S.I, S.result); else, resetAux(); axis(axAux, 'off'); end
+        if ~isempty(g.tiles), drawTileLabels(g.tiles, g.grid, S.result); end
+        if g.module == 1 && isempty(g.tiles), drawHistograms(S.I, S.result); else, resetAux(); axis(axAux, 'off'); end
         log_(sprintf('%s  [%.2f s]\n%s', g.name, toc(t0), info));
+    end
+
+    function drawTileLabels(labels, grid, canvas)
+        % the name of every tile of a "Compare: ..." picture (tile layout of toolboxOperations: 4 px gap)
+        gap = 4;  R = grid(1);  C = grid(2);
+        tw = (size(canvas, 2) - (C - 1) * gap) / C;  th = (size(canvas, 1) - (R - 1) * gap) / R;
+        hold(axRes, 'on');
+        for k = 1:numel(labels)
+            r = ceil(k / C);  c = mod(k - 1, C) + 1;
+            text(axRes, (c - 1) * (tw + gap) + 4, (r - 1) * (th + gap) + 4, labels{k}, 'Color', [1 1 0], 'BackgroundColor', [0 0 0], 'Margin', 1, ...
+                 'FontSize', 9, 'FontWeight', 'bold', 'VerticalAlignment', 'top', 'HorizontalAlignment', 'left', 'Interpreter', 'none', 'Clipping', 'on');
+        end
+        hold(axRes, 'off');
     end
 
     function drawHistograms(A, B)
@@ -435,16 +434,18 @@ app.operations = ops;
 % ------------------------------- pre-filter panel -------------------------------
     function onKernelPreset()
         filt.kernel.Value = kernelPresets(2, filt.preset.Value);
+        livePreview();
     end
 
-    function onFilterChanged(k, showGuide)
-        if nargin < 2, showGuide = false; end
+    function onFilterChanged(k, userChoice)
+        if nargin < 2, userChoice = false; end
         idx = filt.dd(k).Value;
         labs = {filt.l1(k), filt.l2(k)};  eds = {filt.p1(k), filt.p2(k)};
         if idx == 0
             filt.on(k).Value = false;
             for q = 1:2, labs{q}.Visible = 'off';  eds{q}.Visible = 'off'; end
             filt.dd(k).Tooltip = '';
+            if userChoice, S.guide = {};  livePreview(); end
             return
         end
         op = fops(idx);
@@ -462,8 +463,9 @@ app.operations = ops;
             end
         end
         filt.on(k).Value = true;
-        if showGuide                                              % explain the chosen filter
-            filt.report.Value = [{op.name; ''}; helpLines(op)];
+        if userChoice                                             % explain the chosen filter, then show the filtered photo
+            S.guide = [{''; op.name}; helpLines(op)];
+            livePreview();
         end
     end
 
@@ -477,17 +479,12 @@ app.operations = ops;
         lines = lines(:);
     end
 
-    function bf = onEnlarge()
-        % the text of the filter panel in a big window with big letters
-        txt = filt.report.Value;
-        w = round(0.7 * scr(3));  hgt = round(0.75 * scr(4));
-        bf = uifigure('Name', 'Filter panel text', 'Position', [round((scr(3) - w) / 2), round((scr(4) - hgt) / 2), w, hgt], 'Visible', fig.Visible);
-        gl = uigridlayout(bf, [2 1]);  gl.RowHeight = {'1x', 34};
-        uitextarea(gl, 'Editable', 'off', 'FontSize', 18, 'Value', txt);
-        uibutton(gl, 'push', 'Text', 'Close', 'FontSize', 14, 'ButtonPushedFcn', @(~, ~) delete(bf));
+    function unmute()
+        S.mute = false;
     end
 
     function setStagesFromChain(chain)
+        S.mute = true;  cl = onCleanup(@() unmute());              %#ok<NASGU>  no preview while the boxes are filled in by the program
         for k = 1:4
             filt.dd(k).Value = 0;  onFilterChanged(k);
         end
@@ -539,7 +536,7 @@ app.operations = ops;
         if ~kok, return; end
         fig.Pointer = 'watch';  drawnow;
         try
-            [F, rep] = applyPrefilters(S.orig, chain, 'Pad', filt.pad.Value, 'Kernel', K);
+            [F, rep] = applyPrefilters(S.orig, chain, 'Pad', fpad, 'Kernel', K);
         catch ME
             fig.Pointer = 'arrow';  uialert(fig, ME.message, 'Filter failed');  return;
         end
@@ -551,33 +548,24 @@ app.operations = ops;
         end
         S.filterNote = rep;
         if isempty(rep)
-            filt.report.Value = {'No filter selected: the original photo is used.'};
+            filt.report.Value = [{'No filter selected: the original photo is used.'}; S.guide(:)];
         else
-            filt.report.Value = [{sprintf('%d filter(s) on the original photo (%s padding):', numel(rep), filt.pad.Value)}, rep(:).'];
+            filt.report.Value = [{sprintf('%d filter(s) on the original photo:', numel(rep))}; rep(:); S.guide(:)];
         end
         ok = true;
     end
 
-    function onSuggestFilters()
-        if isempty(S.orig), uialert(fig, 'Open an image first.', 'No image'); return; end
-        fig.Pointer = 'watch';  drawnow;
-        [chain, reasons, st] = suggestPrefilters(S.orig);
-        fig.Pointer = 'arrow';
-        setStagesFromChain(chain);
-        lines = [{sprintf('Measured: median luminance %.2f, range %.2f, impulse dots %.1f %%, noise sigma %.3f, saturated %.1f %%.', ...
-                          st.median, st.range, 100 * st.impulse, st.noise, 100 * st.saturated)}, reasons(:).', ...
-                 {'Press "Preview" or "Recognise on filtered photo".'}];
-        filt.report.Value = lines;
-        log_(lines);
-    end
-
-    function onPreviewFilters()
+    function livePreview()
+        % the filtered photo is shown next to the original every time a filter, a number or the matrix changes
+        if S.mute || isempty(S.orig), return; end
         [F, ok] = runFilters();
         if ~ok, return; end
         S.filtered = F;
-        showImage(axRes, F, 'Filtered photo (preview)');
-        drawHistograms(S.orig, F);
-        log_([{'Preview of the filtered photo (right). "Recognise on filtered photo" searches the plate in it.'}, S.filterNote(:).']);
+        if isempty(S.filterNote)
+            clearResult();                                        % no filter active: nothing to compare
+        else
+            showImage(axRes, F, sprintf('Filtered photo (%d filter(s), %d x %d px)', numel(S.filterNote), size(F, 2), size(F, 1)));
+        end
     end
 
     function setUseFilters()
@@ -595,7 +583,7 @@ app.operations = ops;
             opts = {'Format', plate.format.Value, 'Polarity', plate.polarity.Value, 'Consensus', plate.vote.Value};
             try r0 = recognizePlate(S.orig, S.model, opts{:}); catch, r0 = []; end %#ok<CTCH>
             if ~isempty(r0) && r0.found
-                extra = {'', sprintf('The ORIGINAL photo reads %s, so these filters made it worse. Press "Remove filters" or try other filters ("Suggest filters" proposes a chain).', r0.text)};
+                extra = {'', sprintf('The ORIGINAL photo reads %s, so these filters made it worse. Press "Remove filters" or try other filters.', r0.text)};
             else
                 extra = {'', 'The original photo gives no plate either, so the filters are not the cause: see the hint above.'};
             end
@@ -646,25 +634,28 @@ app.operations = ops;
 
     function onClearFilters()
         if isempty(S.orig), return; end
-        S.I = S.orig;  S.filtered = [];  S.filterNote = {};
+        S.I = S.orig;  S.filtered = [];  S.filterNote = {};  S.guide = {};
         setStagesFromChain([]);                                   % the boxes are cleared too, otherwise "Recognise plate" would apply them again
         showImage(axOrig, S.I, 'Original');  clearResult();  resetAux();
         filt.report.Value = {'No filter active: the original photo is used.'};
         log_('Filters removed: the original photo is the input again.');
     end
 
-    function setFiltersScripted(chain, pad, kernelText)
-        % scripted access: app.setFilters(struct('name', 'Median filter', 'p', 3), 'replicate')
+    function setFiltersScripted(chain, kernelText)
+        % scripted access: app.setFilters(struct('name', 'Median filter', 'p', 3)) fills Filter 1 to Filter 4; the filtered photo is shown at once
         setStagesFromChain(chain);
-        if nargin > 1 && ~isempty(pad), filt.pad.Value = pad; end
-        if nargin > 2 && ~isempty(kernelText), filt.kernel.Value = kernelText; end
+        if nargin > 1 && ~isempty(kernelText), filt.kernel.Value = kernelText; end
+        livePreview();
     end
 
 % ---------------------------- plate recognition ------------------------------
     function ok = ensureModel()
         ok = true;
-        if ~isempty(S.model), return; end
         f = fullfile(root, 'models', 'lpr_svm_model_real.mat');      % trained with the real photos
+        if ~isempty(S.model) && (~isfield(S.model, 'plate') || isempty(S.model.plate)) && exist(f, 'file')
+            S.model = [];                                             % a font-only model cannot search photos: go back to the real-photo model
+        end
+        if ~isempty(S.model), return; end
         if ~exist(f, 'file'), f = fullfile(root, 'models', 'lpr_svm_model.mat'); end
         if exist(f, 'file')
             L = load(f);  S.model = L.model;
@@ -677,13 +668,25 @@ app.operations = ops;
     end
 
     function onTrain()
+        if exist(fullfile(root, 'models', 'lpr_svm_model_real.mat'), 'file')
+            sel = uiconfirm(fig, ['The model trained with real photos is installed and used by this toolbox. ' ...
+                'Training here builds a new model from computer fonts only: it cannot search whole photos and reads real plates worse. Train it anyway?'], ...
+                'SVM model', 'Options', {'Keep current model', 'Train anyway'}, 'DefaultOption', 1, 'CancelOption', 1);
+            if ~strcmp(sel, 'Train anyway'), return; end
+        end
         d = uiprogressdlg(fig, 'Title', 'Training SVM', 'Message', ...
             'Rendering characters and training 630 binary SVMs - see the MATLAB command window.', 'Indeterminate', 'on');
         drawnow;
         try
-            S.model = trainLPRModel('NPerClass', 200, 'HoldOut', false);
-            log_(sprintf('SVM trained: %d support vectors, training-set accuracy %.1f %%', ...
-                         size(S.model.svm.SV, 1), 100 * S.model.report.trainAcc));
+            haveReal = exist(fullfile(root, 'models', 'lpr_svm_model_real.mat'), 'file') > 0;
+            if haveReal, saveTo = fullfile(tempdir, 'lpr_svm_model_fonts.mat'); else, saveTo = ''; end      % never overwrite the installed models
+            newModel = trainLPRModel('NPerClass', 200, 'HoldOut', false, 'SaveTo', saveTo);
+            msg = sprintf('SVM trained: %d support vectors, training-set accuracy %.1f %%.', size(newModel.svm.SV, 1), 100 * newModel.report.trainAcc);
+            if haveReal
+                log_([msg ' This model uses computer fonts only and cannot search whole photos, so the real-photo model stays in use.']);
+            else
+                S.model = newModel;  log_(msg);
+            end
         catch ME
             close(d);  uialert(fig, ME.message, 'Training failed');  return;
         end
@@ -760,8 +763,6 @@ app.operations = ops;
         for k = 1:size(S.crops, 1)                                 % the crops, like the frame of a photo editor
             b = S.crops(k, :);
             rectangle(axOrig, 'Position', b, 'EdgeColor', [0.2 0.85 1], 'LineWidth', 1.5, 'LineStyle', '--', 'PickableParts', 'none');
-            text(axOrig, b(1) + b(3), b(2) + b(4), sprintf(' crop %d ', k), 'Color', [0 0 0], 'BackgroundColor', [0.2 0.85 1], 'FontSize', 9, 'FontWeight', 'bold', ...
-                 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right', 'Clipping', 'on', 'PickableParts', 'none');
         end
         S.boxH = gobjects(1, numel(out));
         for k = 1:numel(out)
@@ -1091,7 +1092,7 @@ app.operations = ops;
             if dup == 0
                 S.plates(end+1) = o(q);  newIdx(end+1) = numel(S.plates); %#ok<AGROW>
             else
-                if o(q).conf >= S.plates(dup).conf, S.plates(dup) = o(q); end
+                if betterReading(o(q), S.plates(dup)), S.plates(dup) = o(q); end
                 newIdx(end+1) = dup; %#ok<AGROW>
             end
         end
@@ -1110,6 +1111,16 @@ app.operations = ops;
             if ~over, S.unread(end+1) = u(q); end %#ok<AGROW>
         end
         if ~isempty(newIdx), sel = newIdx(1); end
+    end
+
+    function yes = betterReading(a, b)
+        % the new reading a replaces the old one b of the same plate when its vote confidence is higher; but a reading that
+        % contains the other one and has more characters wins (T935AK797 against T935AK7: the small region digits lower the mean
+        % confidence, they must not decide against the full number)
+        ta = strrep(a.text, ' ', '');  tb = strrep(b.text, ' ', '');
+        if numel(ta) > numel(tb) && contains(ta, tb), yes = true;  return; end
+        if numel(tb) > numel(ta) && contains(tb, ta), yes = false;  return; end
+        yes = a.conf >= b.conf;
     end
 
     function v = boxOverlap(a, b)

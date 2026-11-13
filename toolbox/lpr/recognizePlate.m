@@ -185,6 +185,10 @@ res = classify(res, model, o);
 if o.Split && ~strcmpi(o.Retry, 'off') && (~res.found || numel(res.chars) <= 5)           % too few or invalid characters: touching characters of a blurred or bold plate?
     res = retrySplit(res, plate, model, o);
 end
+if isempty(o.Plate) && res.found && isempty(strrep(o.Format, ' ', ''))       % a tight box loses the characters at its edge (see MARGINRETRY)
+    vers = {img};  if ~isempty(img0), vers{end+1} = img0; end
+    [res, res.bbox] = marginRetry(vers, model, res.bbox, res, 'Split', o.Split);
+end
 if o.Consensus && isempty(o.Plate) && res.found && isempty(strrep(o.Format, ' ', ''))
     t = consensusText(img00, res.bbox, res.text, model);                  % the plate is read in 3 filtered copies and the characters vote
     if ~strcmp(t, res.text)

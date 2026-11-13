@@ -143,7 +143,10 @@ for i = 1:numel(cand)
     if isfield(dbg, 'versions') && isfield(cand, 'src') && cand(i).src <= numel(dbg.versions), src = dbg.versions{cand(i).src}; end
     res = recognizePlate(img, model, 'Plate', src(r, c, :), 'Exposure', 'off', 'Split', o.Split);
     if ~res.found || numel(res.text) < o.MinChars, continue; end
-    out(end+1) = plateOut([c(1), r(1), numel(c), numel(r)], res, cand(i).svm, numel(c), numel(c) >= 90, 1, rowCharHeight(res, numel(r))); %#ok<AGROW>
+    bx = [c(1), r(1), numel(c), numel(r)];
+    vers = {src};  if ~isempty(img0), vers{end+1} = img0; end         % the version of the search and the photo as it was taken
+    [res, bx] = marginRetry(vers, model, bx, res, 'Split', o.Split);  % a reading that looks cut off at one end (the region number "797" of T935AK 797) is repeated with a margin / in the original
+    out(end+1) = plateOut(bx, res, cand(i).svm, numel(c), numel(c) >= 90, 1, rowCharHeight(res, bx(4))); %#ok<AGROW>
 end
 if o.TwoLine, out = addSecondRows(out, img, model); end
 out = dropNested(out);
